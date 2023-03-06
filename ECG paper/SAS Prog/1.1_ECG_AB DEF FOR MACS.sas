@@ -1,16 +1,17 @@
 
 DATA MACS_01;
-SET WORK.X21076_2_MACS;
+SET Work.X21076_2_MACS;
 
 IF 
-   NC_VF_1_0S1 IN ('1.0.S.1') OR 
-   NC_VF_1_0S2 IN ('1.0.S.2') OR
-   NC_VF_1_0S3 IN ('1.0.S.3') OR 
-   NC_S_P3 IN  (
+/*   NC_VF_1_0S1 IN ('1.0.S.1') OR	*/
+/*   NC_VF_1_0S2 IN ('1.0.S.2') OR	*/
+/*   NC_VF_1_0S3 IN ('1.0.S.3') OR	*/
+   2.4>= NC_S_P2> 2.1 OR
+   NC_S_P3 IN (
 				
 				"3.1",
 				"3.1.0",
-				"3.1.1",
+				"3.1.1"/*,
 				"3.2",
 				"3.2.0",
 				"3.2.1",
@@ -19,11 +20,11 @@ IF
 				"3.3.1",
 				"3.4",
 				"3.4.1",
-				"3.4.2"
+				"3.4.2"*/
 				) OR 
     NC_S_P4 IN  (
 				"4.1",
-				"4.1.1",
+				/*"4.1.1",*/
 				"4.1.2"
 				) OR
     NC_S_P5 > 5 OR 
@@ -34,10 +35,10 @@ IF
 				) OR                                        
 
 	NC_S_P7 > 7 OR                                    
-	NC_S_P8 > 8 OR      
-	NC_S_P9 > 9 OR      
+/*	NC_S_P8 > 8 OR	*/
+/*	NC_S_P9 > 9 OR	*/
 	NC_S_P10 > 10 OR 
-    MC_L1 IN  (
+/*    MC_L1 IN  (
 				
 				"1.1.1",
 				"1.1.2",
@@ -47,8 +48,8 @@ IF
 				"1.3.1",
 				"1.3.3",
 				"1.3.8"
-				) OR 
-    MC_F1 IN  (
+				) OR */
+/*    MC_F1 IN  (
 				
 				"1.1.1",
 				"1.1.2",
@@ -63,8 +64,8 @@ IF
 				"1.3.4",
 				"1.3.5",
 				"1.3.6"
-				) OR 
-    MC_V1 IN  (
+				) OR	*/
+/*    MC_V1 IN  (
 				
 				"1.1.1",
 				"1.1.2",
@@ -76,34 +77,35 @@ IF
 				"1.3.1",
 				"1.3.2",
 				"1.3.8"
-				) OR 
-   2.5 > MC_C2 > 2 OR 
-   MC_L4 IN  (
+				) OR	*/
+/*   2.5 > MC_C2 > 2 OR	*/
+/*   MC_L4 IN  (
 				
 				"4.1.1",
 				"4.1.2",
 				"4.2",
 				"4.3",
 				"4.4"
-				) OR 
+				) OR	*/
    MC_F4 IN  (
 				
 				"4.1.1",
-				"4.1.2",
+				"4.1.2"/*,
 				"4.2",
 				"4.3",
-				"4.4"
+				"4.4"*/
 				) OR 
    MC_V4 IN  (
 				
 				"4.1.1",
-				"4.1.2",
+				"4.1.2"/*,
 				"4.2",
 				"4.3",
-				"4.4"
+				"4.4"*/
 				) OR 
    MC_L5 > 5 OR 
    MC_F5 > 5 OR 
+   MC_V5 > 5 OR
    MCR_61 IN  (
 				
 				"6.1"
@@ -114,26 +116,33 @@ IF
 				"6.2.2",
 				"6.2.3"
 				) OR 
-   MCR_63 IN  (
+/*   MCR_63 IN  (
 				
 				"6.3.1"
-				) OR
-   MCR_64 IN  (
+				) OR	*/
+/*   MCR_64 IN  (
 				
 				"6.4.1",
 				"6.4.2"
-				) OR	
-   MCR_65 IN  (
+				) OR	*/
+/*   MCR_65 IN  (
 				
 				"6.5.1",
 				"6.5.2"
-				) OR	
-   MCR_68 IN  (
+				) OR	*/
+/*   MCR_68 IN  (
 				
 				"6.8",
 				"6.8.1"
-				) OR	
-   MC_C7 > 7 OR
+				) OR	*/
+   7.2 > MC_C7 > 7 OR
+   MCR_81 IN  (
+				
+				"8.1.1",
+				"8.1.2",
+				"8.1.3"/*,
+				"8.1.4"*/
+				) OR
    MCR_82 IN  (
 				
 				"8.2.1",
@@ -169,19 +178,19 @@ IF
 				
 				"8.7"
 				) OR
-   MCR_88 IN  (
+/*   MCR_88 IN  (
 				
 				"8.8"
-				) OR
-   MCR_89 IN  (
+				) OR	*/
+/*   MCR_89 IN  (
 				
 				"8.9"
-				) OR  
+				) OR	*/
 /***************************************************  #TYPO?  CODEBOOK IS 9.1 VS DATA HAS 9.1.1*/
-  Mc_c91 IN  (
+/*  Mc_c91 IN  (
 				
 				"9.1.1"
-				) OR
+				) OR	*/
    Mc_L92 IN  (
 				
 				"9.2.1"
@@ -197,16 +206,16 @@ IF
    Mc_C93 IN  (
 				
 				"9.3.1"
-				) OR
-   Mc_C94 IN  (
+				) /*	OR	*/
+/*   Mc_C94 IN  (
 				
 				"9.4.1",
 				"9.4.2"
-				) OR
-   Mc_C95 IN  (
+				) OR	*/
+/*   Mc_C95 IN  (
 				
 				"9.5.1"
-				) 
+				)	*/
 
 /***************************************************  #TYPO?  CODEBOOK IS 9.1 VS DATA HAS 9.1.1*/
 
@@ -227,17 +236,29 @@ RUN;
 DATA MACS_02;
 SET MACS_01;
 
-IF MAX(MC_MI,
-AFIB,
-AFLUTTER,
+IF 
+
+   Major1 = 1 OR
+   MAJOR7A = 1 OR
+   MAJOR7A = 3 OR
+   Major7C = 1 OR
+   MAJOR10A > 0 OR 
+   MAJOR10B > 0 OR
+   MINOR11B = 1 OR
+   MINOR11B = 3 OR
+
+MAX(
+/*MC_MI,*/
+/*AFIB,*
+/*AFLUTTER,*/
 /*CV*/
-LVH_MINN,
-LVH_SOK,
-LVH_NC,
-LVH_CV,    
+/*LVH_MINN,*/
+/*LVH_SOK,*/
+/*LVH_NC,*/
+/*LVH_CV,*/    
  
-NC_VF_0_5, 
-NC_VF_0_6, 
+/*NC_VF_0_5,	*/
+/*NC_VF_0_6, 	*/
 /* NC_VF_1_2      */
 /*                */
 /* NC_VF_1_3      */
@@ -251,9 +272,9 @@ NC_VF_0_6,
 /* NC_VF_1_9      */
 /* NC_VF_1_0S1    */
 
- NC_VF_1_0S1CNT, 
+/* NC_VF_1_0S1CNT, */
 /* NC_VF_1_0S2    */
- NC_VF_1_0S2CNT,
+/* NC_VF_1_0S2CNT, */
 /* NC_VF_1_0S3    */
 /*NC_S_P3                                       */
 /*NC_S_P4                                       */
@@ -296,41 +317,41 @@ NC_VF_0_6,
 /*MC_C93 */
 /*MC_C94 */
 /*MC_C95 */
-MAJOR1 	,
+/*MAJOR1 	,*/
 MAJOR2 	,
 MAJOR3 	,
 MAJOR4 	,
 MAJOR5 	,
 MAJOR6 	,
-MAJOR7A	,
+/*MAJOR7A	,*/
 MAJOR7B	,
- MAJOR7C  	,
- MAJOR7D  	,
- MAJOR8   	,
- MAJOR9   	,
- MAJOR10A 	,
- MAJOR10B 	,
+/* MAJOR7C  	,*/
+/* MAJOR7D  	,*/
+/* MAJOR8   	,*/
+/* MAJOR9   	,*/
+/* MAJOR10A 	,*/
+/* MAJOR10B 	,*/
  MAJOR10C 	,
- MINOR1   	,
+/* MINOR1   	,*/
  MINOR2   	,
- MINOR3   	,
+/* MINOR3   	,*/
  MINOR4L  	,
  MINOR4F  	,
  MINOR4V  	,
- MINOR5L  	,
- MINOR5R  	,
+/* MINOR5L  	,*/
+/* MINOR5R  	,*/
  MINOR6   	,
- MINOR7   	,
- MINOR8   	,
- MINOR9   	,
+/* MINOR7   	,*/
+/* MINOR8   	,*/
+/* MINOR9   	,*/
  MINOR10  	,
- MINOR11A 	,
- MINOR11B 	,
+/* MINOR11A 	,*/
+/* MINOR11B 	,*/
  MINOR11C 	,
- MINOR11D 	,
- MINOR11E 	,
- MINOR11F 	,
- MINOR11G) > 0 THEN ECG_AB=1;
+ MINOR11D 	/*,*/
+/* MINOR11E 	,*/
+/* MINOR11F 	,*/
+/* MINOR11G*/) > 0 THEN ECG_AB=1;
 ;
 RUN;
 
