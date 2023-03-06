@@ -1,0 +1,116 @@
+---
+title: "ECG paper with Claudia and Denise"
+author: "Yue Pan"
+date: "`r Sys.Date()`"
+format:
+  html:
+    self-contained: true
+knitr:
+  opts_chunk:      ########## set global options ############
+    collapse: true # keep code from blocks together (if shown)
+    echo: false    # don't show code
+    message: true  # show messages
+    warning: true  # show warnings
+    error: true    # show error messages
+    comment: ""    # don't show ## with printed output
+    R.options:    
+      digits: 3    # round to three digits
+editor: visual
+bibliography: [references.bib, packages.bib]
+csl: the-new-england-journal-of-medicine.csl
+---
+
+```{r}
+#| label: tidyverse
+#| echo: false
+
+# remove.packages("rlang")
+# install.packages("rlang")
+library(conflicted)
+conflict_prefer("filter", "dplyr", quiet = TRUE)
+conflict_prefer("lag", "dplyr", quiet = TRUE)
+conflict_prefer("mutate", "dplyr", quiet = TRUE)
+conflict_prefer("rename", "dplyr", quiet = TRUE)
+
+# suppressPackageStartupMessages(library(tidyverse))
+
+# suppress "`summarise()` has grouped output by " messages
+options(dplyr.summarise.inform=F)
+
+
+```
+
+# Introduction
+
+## 1. import and check data
+
+```{r}
+#| echo: false
+#| warning: false
+library(tidyverse)
+library('redcapAPI')
+library('rUM')
+library('REDCapR')
+library('flextable')
+library('dlookr')
+library('janitor')
+library('dplyr')
+library('ggplot2')
+if(!require('plyr')) {
+    install.packages('plyr')
+    library('plyr')
+}
+library(skimr)
+library("stringr") 
+
+# import data
+X21076_2_macs <- read_csv("data/X21076_2/X21076_2_macs.csv") %>% 
+  arrange(MACSID, VISIT) %>% 
+  group_by(MACSID) %>% 
+  filter(row_number()==1) %>% 
+  ungroup() %>% 
+  # select(MC_MI) %>% 
+  mutate(ECG_AB = case_when(MC_MI==1 or AFIB==1 ~ "Yes",
+                           TRUE ~ "No")) %>% 
+  head(ECG_AB)
+                           
+X21076_2_macs  %>% 
+  select(ECG_AB)
+
+  
+  
+X21076_2_wihs <- read_csv("data/X21076_2/X21076_2_wihs.csv") %>% 
+  arrange(WIHSID, VISIT) %>% 
+  group_by(WIHSID) %>% 
+  filter(row_number()==1) %>% 
+  ungroup() %>% 
+  skim() %>% flextable
+
+
+```
+
+## Retrieve data
+
+# Methods
+
+Analyses were conducted with `r stringr::word(R.Version()$version.string, 1, 3)` with the `tidyverse` (`r packageVersion("tidyverse")`), `rUM` (`r packageVersion("rUM")`), `table1` (`r packageVersion("table1")`) packages used to preprocess and summarize data.[@R-base; @R-tidyverse; @tidyverse2019; @R-rUM; @R-table1]
+
+# Results
+
+# Conclusion
+
+# References {.unnumbered}
+
+```{r}
+#| include: false
+
+# automatically create a bib database for loaded R packages & rUM
+knitr::write_bib(
+  c(
+    .packages(),
+    "rUM",
+    "table1"
+  ),
+  "packages.bib"
+)
+```
