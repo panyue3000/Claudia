@@ -1,0 +1,25 @@
+Supplementary analysis feasibility check
+
+Sex-by-HIV supplementary table: feasible from the local prevent_risk.sas7bdat file and the existing analysis derivations.
+
+Recommended variables for the dedicated sex-by-HIV table:
+- HIV status: use STATUS with the existing QMD derivation hiv_status (STATUS == 1 -> PLWoH; STATUS in 2, 4, 5 -> PLWH). Do not use hiv2 unless reconfirmed against the current QMD.
+- Sex: use SEX, matching the existing manuscript and model code. Do not use GENDERID for this table.
+- Age: AGEATVIS.
+- HAD outcomes: heart_age_deviation and derived had5 (heart_age_deviation >= 5).
+- Race/ethnicity: use RACE and HISP with the existing QMD derivation race_eth_4cat.
+- Region: REGION with the existing QMD derivation REGION_factor.
+- Smoking: CURSMOKE_BIN.
+- BMI/obesity: BMI and/or derived bmi_cat.
+- Diabetes: DIAB_BIN or diabetes, consistent with the existing QMD derivation.
+- Hypertension/SBP: SYSTOLIC and/or HYPERTENSIONMED, with sbp_cat if using the existing QMD category.
+
+ZIP/geocode feasibility check
+
+Local geocode/ZIP analysis is not feasible from the available prevent_risk.sas7bdat variable inventory.
+
+Terms searched in x24067_variable_inventory.txt: zip, zipcode, postal, geocode, geo, tract, county, fips, adi, svi, sdoh, depriv, zcta, census, address, state, neigh, region, site.
+
+Fields found: SITE, REGION, NEIGHBSAFE, NEIGHBVIOL.
+
+Interpretation: SITE and REGION can support broad cohort/site or regional adjustment/stratification, and NEIGHBSAFE/NEIGHBVIOL can support limited self-reported neighborhood-context analyses. The inventory does not contain ZIP/ZCTA, census tract, county, FIPS, ADI, SVI, deprivation index, address, or similar geographic linkage fields needed for a local ZIP/geocode-based supplementary analysis.

@@ -1,0 +1,1039 @@
+---
+title: "X24067_Pan_Heart Age"
+author: "Yue Pan"
+date: "`r Sys.Date()`"
+format:
+  html:
+    self-contained: true
+    toc: true
+    toc-title: "Outline"
+    toc-depth: 3
+    toc-location: body
+    number-sections: true
+    code-fold: true
+    code-summary: "Show code"
+    code-tools: true
+    code-copy: true
+    page-layout: full
+    smooth-scroll: true
+knitr:
+  opts_chunk:
+    collapse: true
+    echo: true
+    message: true
+    warning: true
+    error: true
+    comment: ""
+    R.options:
+      digits: 3
+editor: visual
+bibliography: [references.bib, packages.bib]
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+
+# ---- Packages ----
+library(here)
+library(conflicted)
+library(readr)
+library(dplyr)
+library(stringr)
+library(forcats)
+library(ggplot2)
+library(scales)
+library(purrr)      # Required for map/map_dfr functions
+library(patchwork)
+
+# ---- Reporting Packages ----
+library(gtsummary)
+library(sumExtras)
+library(gt)
+library(labelled)
+library(haven)      # Read SAS data
+
+# ---- Modeling Packages ----
+library(broom)       # For tidying model outputs
+library(emmeans)     # For marginal means & interactions
+library(mice)        # For multiple imputation
+
+# Apply JAMA-style theme
+sumExtras::use_jama_theme()
+
+# Conflict preferences
+conflict_prefer("filter", "dplyr", quiet = TRUE)
+conflict_prefer("select", "dplyr", quiet = TRUE)
+conflict_prefer("recode", "dplyr", quiet = TRUE)
+conflict_prefer("lag", "dplyr", quiet = TRUE)
+conflict_prefer("var_label", "labelled", quiet = TRUE)
+
+options(dplyr.summarise.inform = FALSE)
+options(scipen = 999)
+```
+
+# Introduction
+
+This is for X24067_Pan_Heart Age. This analysis compares Heart Age outcomes between People Living Without HIV (PLWoH) and People Living With HIV (PLWH) (combining Seroprevalent and Seroconverter groups).
+
+Output order matches `X24067_Tables and Figures.docx`:
+Table 1 → Table 2 → Table 3 → Fig 1 → Suppl Tables S1–S5 → Suppl Table S8 → Table 4 → Fig 2 → Suppl Table S6 → Suppl Table S7 → Suppl Fig S1 → Suppl Fig S2 → Suppl Figs S3–S5.
+
+## 0. Load and Clean Data
+
+```{r labels, include=TRUE}
+# ---- 1. SETUP PATHS (cross-platform) ----
+# Candidate locations for prevent_risk.sas7bdat, checked in order:
+#   1. Windows Box path (original)
+#   2. Mac: place the file in X24067_HA PREVENT/data/prevent_risk.sas7bdat
+#      relative to the project root (ECG paper/)
+candidate_paths <- c(
+  # Windows
+  "C:/Users/panyue/Box/Yue Pan from old laptop 2015/DR FEASTER/Other Professors/111 CCS/X24067_Pan_Heart Age/SAS Output/prevent_risk.sas7bdat",
+  # Mac — relative to this script (analysis/ folder)
+  file.path(dirname(normalizePath(if (nzchar(knitr::current_input()))
+                                    knitr::current_input() else ".")),
+            "..", "data", "prevent_risk.sas7bdat"),
+  # Mac fallback — relative to working directory
+  file.path("..", "data", "prevent_risk.sas7bdat"),
+  file.path("data", "prevent_risk.sas7bdat")
+)
+
+input_path <- Filter(file.exists, candidate_paths)[1]
+
+if (is.null(input_path) || is.na(input_path)) {
+  stop(paste0(
+    "prevent_risk.sas7bdat not found. On Mac, copy it to:\n",
+    "  X24067_HA PREVENT/data/prevent_risk.sas7bdat\n",
+    "Paths tried:\n",
+    paste(" -", candidate_paths, collapse = "\n")
+  ))
+}
+
+message("Reading data from: ", input_path)
+prevent_risk <- read_sas(input_path)
+
+# Output figures folder: save next to this script in ../figures/
+figures_dir <- file.path(dirname(normalizePath(if (nzchar(knitr::current_input()))
+                                                 knitr::current_input() else ".")),
+                          "..", "figures")
+if (!dir.exists(figures_dir)) dir.create(figures_dir, recursive = TRUE)
+
+# Legacy project_dir for any remaining references
+project_dir <- dirname(input_path)
+
+# ---- 2. FILTER & CLEAN ----
+analysis_clean <- prevent_risk %>%
+  # Filter to one row per CCSID (Baseline/First Visit logic)
+  arrange(CCSID, VISIT) %>%
+  group_by(CCSID) %>%
+  slice(1) %>%
+  ungroup() %>%
+  mutate(
+    # --- HIV STATUS (PLWoH vs PLWH) ---
+    hiv_status = case_when(
+      STATUS == 1 ~ "PLWoH",
+      STATUS %in% c(2, 4, 5) ~ "PLWH",
+      TRUE ~ NA_character_
+    ),
+    hiv_status = factor(hiv_status, levels = c("PLWoH", "PLWH")),
+
+    # --- RACE/ETHNICITY (4 Groups) ---
+    race_eth_4cat = case_when(
+      HISP == 1 ~ "Hispanic",
+      HISP == 0 & RACE == 5 ~ "Non-Hispanic White",
+      HISP == 0 & RACE == 4 ~ "Non-Hispanic Black",
+      TRUE ~ "Other"
+    ),
+    race_eth_4cat = factor(race_eth_4cat,
+                           levels = c("Non-Hispanic White",
+                                      "Non-Hispanic Black",
+                                      "Hispanic",
+                                      "Other")),
+
+    # --- REGION ---
+    REGION_factor = factor(REGION,
+                           levels = c(0, 1, 2, 3, 4),
+                           labels = c("West (CA)",
+                                      "Northeast (NY)",
+                                      "Mid-Atlantic (DC, MD)",
+                                      "South (AL, FL, GA, MS, NC)",
+                                      "Midwest (IL, OH, PA)")),
+
+    SEX = factor(SEX, levels = c("Female", "Male")),
+
+    # --- CLINICAL BINARIES (0=No, 1=Yes) ---
+    HYPERTENSIONMED = factor(ifelse(HYPERTENSIONMED == 1, "Yes", "No"), levels = c("No", "Yes")),
+    STATINMED = factor(ifelse(STATINMED == 1, "Yes", "No"), levels = c("No", "Yes")),
+
+    # Smoking (0/10=No, 1/11=Yes)
+    CURSMOKE_BIN = factor(ifelse(CURSMOKE %in% c(1, 11), "Yes", "No"), levels = c("No", "Yes")),
+
+    # Diabetes
+    DIAB_BIN = factor(ifelse(DIAB_BIN == 1, "Yes", "No"), levels = c("No", "Yes")),
+
+    # --- CATEGORIES ---
+    age_group = case_when(
+      AGEATVIS >= 30 & AGEATVIS < 40 ~ "30-39",
+      AGEATVIS >= 40 & AGEATVIS < 50 ~ "40-49",
+      AGEATVIS >= 50 & AGEATVIS < 60 ~ "50-59",
+      AGEATVIS >= 60 & AGEATVIS < 70 ~ "60-69",
+      AGEATVIS >= 70 ~ "70+",
+      TRUE ~ NA_character_
+    ),
+
+    bmi_cat = case_when(
+      BMI < 18.5 ~ "Underweight",
+      BMI >= 18.5 & BMI < 25 ~ "Normal",
+      BMI >= 25 & BMI < 30 ~ "Overweight",
+      BMI >= 30 ~ "Obese",
+      TRUE ~ NA_character_
+    ) %>% factor(levels = c("Underweight", "Normal", "Overweight", "Obese")),
+
+    sbp_cat = case_when(
+      SYSTOLIC < 120 ~ "Normal (<120)",
+      SYSTOLIC >= 120 & SYSTOLIC < 130 ~ "Elevated (120-129)",
+      SYSTOLIC >= 130 & SYSTOLIC < 140 ~ "Stage 1 HTN (130-139)",
+      SYSTOLIC >= 140 ~ "Stage 2 HTN (>=140)",
+      TRUE ~ NA_character_
+    ),
+
+    chol_cat = case_when(
+      CHOL < 200 ~ "Desirable (<200)",
+      CHOL >= 200 & CHOL < 240 ~ "Borderline (200-239)",
+      CHOL >= 240 ~ "High (>=240)",
+      TRUE ~ NA_character_
+    ),
+
+    egfr_cat = case_when(
+      EGFR_CKDEPI < 60 ~ "Low (<60)",
+      EGFR_CKDEPI >= 60 & EGFR_CKDEPI <= 90 ~ "Moderate (60-90)",
+      EGFR_CKDEPI > 90 ~ "High (>90)",
+      TRUE ~ NA_character_
+    ),
+
+    # --- OUTCOME FLAGS ---
+    had5  = factor(ifelse(heart_age_deviation >= 5, "Yes", "No"), levels = c("No", "Yes")),
+    had10 = factor(ifelse(heart_age_deviation >= 10, "Yes", "No"), levels = c("No", "Yes")),
+    ha_gt_age = factor(ifelse(heart_age > AGEATVIS, "Yes", "No"), levels = c("No", "Yes")),
+
+    # --- HIV SPECIFIC ---
+    cd4_cat = case_when(
+      CD4N < 200 ~ "<200 cells/mm3",
+      CD4N >= 200 & CD4N < 500 ~ "200-499 cells/mm3",
+      CD4N >= 500 ~ ">=500 cells/mm3",
+      TRUE ~ NA_character_
+    ) %>% factor(levels = c("<200 cells/mm3", "200-499 cells/mm3", ">=500 cells/mm3"))
+
+  ) %>%
+  filter(!is.na(hiv_status), !is.na(BMI), !is.na(CHOL), !is.na(SYSTOLIC))
+
+# --- SET VARIABLE LABELS ---
+var_label(analysis_clean) <- list(
+  AGEATVIS = "Age (years)",
+  age_group = "Age Group",
+  SEX = "Biological Sex",
+  race_eth_4cat = "Race/Ethnicity",
+  REGION_factor = "Region",
+  BMI = "Body Mass Index (kg/m^2)",
+  bmi_cat = "BMI Category",
+  SYSTOLIC = "Systolic BP (mmHg)",
+  sbp_cat = "SBP Category",
+  CHOL = "Total Cholesterol (mg/dL)",
+  chol_cat = "Cholesterol Category",
+  HDLCT = "HDL Cholesterol (mg/dL)",
+  EGFR_CKDEPI = "eGFR (CKD-EPI)",
+  egfr_cat = "eGFR Category",
+  CURSMOKE_BIN = "Current Smoker",
+  DIAB_BIN = "Diabetes",
+  HYPERTENSIONMED = "Anti-hypertensive Meds",
+  STATINMED = "Statin Use",
+  prevent_risk = "PREVENT 10-Year Risk",
+  heart_age = "Heart Age (years)",
+  heart_age_deviation = "Heart Age Deviation (HAD)",
+  had5 = "HAD ≥ 5 Years",
+  had10 = "HAD ≥ 10 Years",
+  ha_gt_age = "Heart Age > Chronological Age",
+  CD4N = "CD4 Count (cells/mm3)",
+  cd4_cat = "CD4 Count Category"
+)
+
+# ---- 3. CALCULATE TOTAL N FOR HEADERS ----
+n_plwoh <- sum(analysis_clean$hiv_status == "PLWoH", na.rm = TRUE)
+n_plwh  <- sum(analysis_clean$hiv_status == "PLWH", na.rm = TRUE)
+```
+
+------------------------------------------------------------------------
+
+## Table 1: Descriptive Characteristics
+
+```{r table1, include=TRUE}
+table1 <- analysis_clean %>%
+  select(hiv_status, AGEATVIS, age_group, SEX, race_eth_4cat, REGION_factor,
+         BMI, bmi_cat, SYSTOLIC, sbp_cat, CHOL, chol_cat, HDLCT,
+         EGFR_CKDEPI, egfr_cat, CURSMOKE_BIN, DIAB_BIN,
+         HYPERTENSIONMED, STATINMED, prevent_risk,
+         heart_age, heart_age_deviation, had5, had10,
+         CD4N, cd4_cat) %>%
+  tbl_summary(
+    by = hiv_status,
+    missing = "no",
+    statistic = list(
+      all_continuous() ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} ({p}%)"
+    ),
+    digits = list(all_continuous() ~ 1, all_categorical() ~ 1)
+  ) %>%
+  add_p() %>%
+  add_overall() %>%
+  bold_p() %>%
+  modify_caption("**Table 1. Descriptive characteristics of 2,729 participants by HIV serostatus in the MWCCS, 2020-2024.**") %>%
+  bold_labels()
+
+table1
+```
+
+------------------------------------------------------------------------
+
+## Tables 2–3 and Figure 1: Multivariable Regression
+
+```{r modeling_setup}
+# ==============================================================================
+#  DATA SETUP & RECODING FOR MODELING
+# ==============================================================================
+
+theme_gtsummary_journal(journal = "jama")
+
+modeling_data <- analysis_clean %>%
+  mutate(
+    # 1. RESCALE AGE: Convert years to "Decades" so OR is meaningful
+    age_decade = AGEATVIS / 10,
+
+    # 2. HIV STATUS: Set reference to 'PLWoH'
+    hiv_status = fct_relevel(hiv_status, "PLWoH"),
+
+    # 3. SEX: Set reference to Male
+    SEX = fct_relevel(SEX, "Male"),
+
+    # 4. RACE: Set reference to White
+    race_eth_4cat = fct_relevel(race_eth_4cat, "Non-Hispanic White"),
+
+    # 5. OUTCOMES: Ensure "No" is reference
+    had5 = fct_relevel(had5, "No"),
+
+    # 6. HIV SPECIFIC VARS (for Table 4)
+    viral_suppression = case_when(
+      UD_VL == 1 ~ "Undetectable",
+      UD_VL %in% c(2, 3) ~ "Detectable",
+      TRUE ~ NA_character_
+    ),
+    viral_suppression = factor(viral_suppression, levels = c("Undetectable", "Detectable")),
+
+    # CD4 Count (scaled per 100 cells for readability)
+    cd4_100 = CD4N / 100
+  )
+```
+
+### Table 2: Linear Regression (Continuous HAD)
+
+```{r table2_linear}
+lm_aim1 <- lm(
+  heart_age_deviation ~ hiv_status + age_decade + SEX + race_eth_4cat + REGION_factor,
+  data = modeling_data
+)
+
+tbl_aim1_linear <- tbl_regression(
+  lm_aim1,
+  estimate_fun = ~ style_sigfig(.x, digits = 2),
+  label = list(
+    hiv_status ~ "HIV Serostatus",
+    age_decade ~ "Age (per 10 years)",
+    SEX ~ "Sex",
+    race_eth_4cat ~ "Race/Ethnicity",
+    REGION_factor ~ "Region"
+  )
+) %>%
+  bold_p() %>%
+  add_global_p() %>%
+  modify_caption("**Table 2. Multivariable linear regression predicting heart age deviation (years).**")
+
+tbl_aim1_linear
+```
+
+### Table 3: Logistic Regression (HAD ≥5 Years) and Figure 1
+
+```{r table3_logistic_and_fig1}
+glm_aim1 <- glm(
+  had5 ~ hiv_status + age_decade + SEX + race_eth_4cat + REGION_factor,
+  data = modeling_data,
+  family = binomial
+)
+
+tbl_aim1_logistic <- tbl_regression(
+  glm_aim1,
+  exponentiate = TRUE,
+  label = list(
+    hiv_status ~ "HIV Serostatus",
+    age_decade ~ "Age (per 10 years)",
+    SEX ~ "Sex",
+    race_eth_4cat ~ "Race/Ethnicity",
+    REGION_factor ~ "Region"
+  )
+) %>%
+  bold_p() %>%
+  add_global_p() %>%
+  modify_caption("**Table 3. Multivariable logistic regression predicting elevated heart age deviation (≥5 years).**")
+
+tbl_aim1_logistic
+
+# --- Figure 1: Forest Plot ---
+plot_data_aim1 <- broom::tidy(glm_aim1, conf.int = TRUE, exponentiate = TRUE) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    term_label = case_when(
+      term == "age_decade" ~ "Age (per 10 years)",
+      term == "hiv_statusPLWH" ~ "HIV-positive (vs HIV-negative)",
+      term == "SEXFemale" ~ "Female (vs male)",
+      term == "race_eth_4catNon-Hispanic Black" ~ "Non-Hispanic Black (vs Non-Hispanic White)",
+      term == "race_eth_4catHispanic" ~ "Hispanic (vs Non-Hispanic White)",
+      term == "race_eth_4catOther" ~ "Other race/ethnicity (vs Non-Hispanic White)",
+      term == "REGION_factorNortheast (NY)" ~ "Northeast (vs West)",
+      term == "REGION_factorMid-Atlantic (DC, MD)" ~ "Mid-Atlantic (vs West)",
+      term == "REGION_factorSouth (AL, FL, GA, MS, NC)" ~ "South (vs West)",
+      term == "REGION_factorMidwest (IL, OH, PA)" ~ "Midwest (vs West)",
+      TRUE ~ term
+    ),
+    term_label = fct_reorder(term_label, estimate)
+  )
+
+ggplot(plot_data_aim1, aes(y = term_label, x = estimate, xmin = conf.low, xmax = conf.high)) +
+  geom_point(color = "#0072B2", size = 3) +
+  geom_errorbar(width = 0.2, color = "#0072B2") +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "gray50") +
+  labs(
+    title = "Predictors of elevated heart age deviation (HAD ≥ 5 years)",
+    subtitle = "Multivariable logistic regression; reference categories: HIV-negative, male, Non-Hispanic White, West",
+    x = "Odds ratio (95% CI)",
+    y = NULL
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(face = "bold"))
+
+ggsave(
+  filename = file.path(figures_dir, "Fig1_HAD5_LogisticForestPlot.png"),
+  width = 8, height = 6, dpi = 300, bg = "white"
+)
+message("Fig 1 saved to: ", file.path(figures_dir, "Fig1_HAD5_LogisticForestPlot.png"))
+```
+
+------------------------------------------------------------------------
+
+## Supplemental Tables S1–S5: Stratified Outcomes by Subgroup
+
+```{r strat_setup}
+# Define the subgroups for stratification
+row_vars <- c("age_group", "SEX", "race_eth_4cat", "REGION_factor", "bmi_cat",
+              "sbp_cat", "chol_cat", "egfr_cat", "CURSMOKE_BIN", "DIAB_BIN",
+              "HYPERTENSIONMED", "STATINMED")
+
+var_labels_map <- c(
+  "age_group" = "Age Group",
+  "SEX" = "Sex",
+  "race_eth_4cat" = "Race/Ethnicity",
+  "REGION_factor" = "Region",
+  "bmi_cat" = "BMI Category",
+  "sbp_cat" = "SBP Category",
+  "chol_cat" = "Cholesterol Category",
+  "egfr_cat" = "eGFR Category",
+  "CURSMOKE_BIN" = "Current Smoker",
+  "DIAB_BIN" = "Diabetes",
+  "HYPERTENSIONMED" = "BP Meds",
+  "STATINMED" = "Statin Use"
+)
+```
+
+```{r strat_functions}
+# Function to create tables for continuous outcomes (Mean/SD)
+create_strat_continuous <- function(data, outcome_var, caption) {
+
+  var_labels_map <- c(
+    "age_group" = "Age Group",
+    "SEX" = "Sex",
+    "race_eth_4cat" = "Race/Ethnicity",
+    "REGION_factor" = "Region",
+    "bmi_cat" = "BMI Category",
+    "sbp_cat" = "SBP Category",
+    "chol_cat" = "Cholesterol Category",
+    "egfr_cat" = "eGFR Category",
+    "CURSMOKE_BIN" = "Current Smoker",
+    "DIAB_BIN" = "Diabetes",
+    "HYPERTENSIONMED" = "BP Meds",
+    "STATINMED" = "Statin Use"
+  )
+
+  tbl_list <- list()
+
+  for (var in row_vars) {
+    if(is.factor(data[[var]])) lvls <- levels(data[[var]]) else lvls <- sort(unique(na.omit(data[[var]])))
+
+    rows_list <- lapply(lvls, function(lvl) {
+      subset_data <- data %>% filter(.data[[var]] == lvl)
+      if(nrow(subset_data) == 0) return(NULL)
+
+      subset_data %>%
+        select(hiv_status, all_of(outcome_var)) %>%
+        tbl_summary(
+          by = hiv_status,
+          statistic = all_continuous() ~ "{mean} ({sd})",
+          digits = all_continuous() ~ 2,
+          label = list(all_of(outcome_var) ~ lvl),
+          missing = "no"
+        ) %>%
+        add_p(test = all_continuous() ~ "t.test") %>%
+        bold_p() %>%
+        modify_header(label = "**Characteristic**")
+    })
+
+    rows_list <- rows_list[!sapply(rows_list, is.null)]
+    tbl_list[[var]] <- tbl_stack(rows_list)
+  }
+
+  header_plwoh <- paste0("**PLWoH**\nN = ", format(n_plwoh, big.mark = ","))
+  header_plwh  <- paste0("**PLWH**\nN = ", format(n_plwh, big.mark = ","))
+
+  tbl_stack(tbl_list, group_header = var_labels_map[row_vars]) %>%
+    modify_caption(caption) %>%
+    bold_labels() %>%
+    modify_header(stat_1 = header_plwoh, stat_2 = header_plwh)
+}
+
+# Function to create tables for binary outcomes (Prevalence n/N %)
+create_strat_prevalence <- function(data, outcome_var, caption) {
+
+  tbl_list <- list()
+
+  for (var in row_vars) {
+    if(is.factor(data[[var]])) lvls <- levels(data[[var]]) else lvls <- sort(unique(na.omit(data[[var]])))
+
+    rows_list <- lapply(lvls, function(lvl) {
+      subset_data <- data %>% filter(.data[[var]] == lvl)
+      if(nrow(subset_data) == 0) return(NULL)
+
+      subset_data %>%
+        select(hiv_status, all_of(outcome_var)) %>%
+        tbl_summary(
+          by = hiv_status,
+          statistic = all_categorical() ~ "{n}/{N} ({p}%)",
+          digits = all_categorical() ~ 1,
+          label = list(all_of(outcome_var) ~ lvl),
+          missing = "no",
+          value = list(all_of(outcome_var) ~ "Yes")
+        ) %>%
+        add_p() %>%
+        bold_p() %>%
+        modify_header(label = "**Characteristic**")
+    })
+
+    rows_list <- rows_list[!sapply(rows_list, is.null)]
+    tbl_list[[var]] <- tbl_stack(rows_list)
+  }
+
+  header_plwoh <- paste0("**PLWoH**\nN = ", format(n_plwoh, big.mark = ","))
+  header_plwh  <- paste0("**PLWH**\nN = ", format(n_plwh, big.mark = ","))
+
+  tbl_stack(tbl_list, group_header = var_labels_map[row_vars]) %>%
+    modify_caption(caption) %>%
+    bold_labels() %>%
+    modify_header(stat_1 = header_plwoh, stat_2 = header_plwh)
+}
+```
+
+#### Supplemental Table S1: PREVENT 10-Year Risk
+
+```{r suppl_s1}
+create_strat_continuous(
+  analysis_clean,
+  "prevent_risk",
+  "**Supplemental Table S1. PREVENT 10-year cardiovascular risk (mean [SD]) by HIV serostatus and clinical subgroups.**"
+)
+```
+
+#### Supplemental Table S2: Heart Age Deviation
+
+```{r suppl_s2}
+create_strat_continuous(
+  analysis_clean,
+  "heart_age_deviation",
+  "**Supplemental Table S2. Heart age deviation (years; mean [SD]) by HIV serostatus and clinical subgroups.**"
+)
+```
+
+#### Supplemental Table S3: Heart Age (Years)
+
+```{r suppl_s3}
+create_strat_continuous(
+  analysis_clean,
+  "heart_age",
+  "**Supplemental Table S3. Heart age (years; mean [SD]) by HIV serostatus and clinical subgroups.**"
+)
+```
+
+#### Supplemental Table S4: Prevalence of HAD ≥5 Years
+
+```{r suppl_s4}
+create_strat_prevalence(
+  analysis_clean,
+  "had5",
+  "**Supplemental Table S4. Prevalence of heart age deviation ≥5 years by HIV serostatus and clinical subgroups. Note: the ≥5-year threshold is exploratory and has not been validated against hard CVD endpoints in PLWH.**"
+)
+```
+
+#### Supplemental Table S5: Prevalence of Heart Age > Chronological Age
+
+```{r suppl_s5}
+create_strat_prevalence(
+  analysis_clean,
+  "ha_gt_age",
+  "**Supplemental Table S5. Prevalence of heart age > chronological age by HIV serostatus and clinical subgroups.**"
+)
+```
+
+#### Supplemental Table S8: Sex-Stratified Descriptive Characteristics by HIV Serostatus
+
+```{r suppl_s8_sex_hiv_descriptives}
+fmt_mean_sd <- function(x, digits = 1) {
+  sprintf(
+    paste0("%.", digits, "f (%.", digits, "f)"),
+    mean(x, na.rm = TRUE),
+    stats::sd(x, na.rm = TRUE)
+  )
+}
+
+fmt_n_pct <- function(x, digits = 1) {
+  n <- length(x)
+  yes <- sum(x, na.rm = TRUE)
+  sprintf(paste0("%d (%.", digits, "f)"), yes, 100 * yes / n)
+}
+
+analysis_output_dir <- dirname(normalizePath(
+  if (nzchar(knitr::current_input())) knitr::current_input() else ".",
+  mustWork = FALSE
+))
+
+sex_hiv_supp_table <- analysis_clean %>%
+  filter(!is.na(SEX), !is.na(hiv_status)) %>%
+  group_by(SEX, hiv_status) %>%
+  summarise(
+    N = n(),
+    `Age, mean (SD)` = fmt_mean_sd(AGEATVIS),
+    `Non-Hispanic Black, n (%)` = fmt_n_pct(race_eth_4cat == "Non-Hispanic Black"),
+    `Southern region, n (%)` = fmt_n_pct(REGION_factor == "South (AL, FL, GA, MS, NC)"),
+    `Current smoking, n (%)` = fmt_n_pct(CURSMOKE_BIN == "Yes"),
+    `BMI, mean (SD)` = fmt_mean_sd(BMI),
+    `Obesity, n (%)` = fmt_n_pct(bmi_cat == "Obese"),
+    `Diabetes, n (%)` = fmt_n_pct(DIAB_BIN == "Yes"),
+    `Systolic BP, mean (SD)` = fmt_mean_sd(SYSTOLIC),
+    `Stage 2 hypertension, n (%)` = fmt_n_pct(sbp_cat == "Stage 2 HTN (>=140)"),
+    `Heart age deviation, mean (SD)` = fmt_mean_sd(heart_age_deviation),
+    `HAD >=5 years, n (%)` = fmt_n_pct(had5 == "Yes"),
+    .groups = "drop"
+  ) %>%
+  rename(
+    Sex = SEX,
+    `HIV status` = hiv_status
+  ) %>%
+  arrange(Sex, `HIV status`)
+
+write_csv(
+  sex_hiv_supp_table,
+  file.path(analysis_output_dir, "x24067_supplementary_sex_hiv_table.csv")
+)
+
+write_lines(
+  c(
+    "# Supplemental Table S8",
+    "",
+    "Sex-stratified descriptive characteristics and heart age deviation by HIV serostatus.",
+    "",
+    knitr::kable(sex_hiv_supp_table, format = "markdown")
+  ),
+  file.path(analysis_output_dir, "x24067_supplementary_sex_hiv_table.md")
+)
+
+sex_hiv_supp_table
+```
+
+------------------------------------------------------------------------
+
+## Table 4 and Figure 2: HIV Severity Model (PLWH Only)
+
+```{r table4_and_fig2}
+# Filter to PLWH with complete viral load and CD4 data
+plwh_data <- modeling_data %>%
+  filter(hiv_status == "PLWH") %>%
+  filter(!is.na(UD_VL), !is.na(CD4N))
+
+lm_hiv_severity <- lm(
+  heart_age_deviation ~ viral_suppression + cd4_100 + age_decade + SEX + race_eth_4cat,
+  data = plwh_data
+)
+
+tbl_hiv_severity <- tbl_regression(
+  lm_hiv_severity,
+  estimate_fun = ~ style_sigfig(.x, digits = 2),
+  label = list(
+    viral_suppression ~ "Viral Suppression (Ref: Undetectable)",
+    cd4_100 ~ "CD4 Count (per 100 cells)",
+    age_decade ~ "Age (per 10 years)",
+    SEX ~ "Sex",
+    race_eth_4cat ~ "Race/Ethnicity"
+  )
+) %>%
+  bold_p() %>%
+  modify_caption("**Table 4. HIV severity model (PLWH only): viral load and CD4 count predicting heart age deviation.**")
+
+tbl_hiv_severity
+
+# --- Figure 2: Forest Plot ---
+plot_hiv <- broom::tidy(lm_hiv_severity, conf.int = TRUE) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(
+    term_label = case_when(
+      term == "viral_suppressionDetectable" ~ "Detectable viral load (vs undetectable)",
+      term == "cd4_100" ~ "CD4 count (per 100 cells/mm³)",
+      term == "age_decade" ~ "Age (per 10 years)",
+      term == "SEXFemale" ~ "Female (vs male)",
+      term == "race_eth_4catNon-Hispanic Black" ~ "Non-Hispanic Black (vs Non-Hispanic White)",
+      term == "race_eth_4catHispanic" ~ "Hispanic (vs Non-Hispanic White)",
+      term == "race_eth_4catOther" ~ "Other race/ethnicity (vs Non-Hispanic White)",
+      TRUE ~ term
+    ),
+    term_label = fct_reorder(term_label, estimate)
+  )
+
+hiv_plot_obj <- ggplot(plot_hiv, aes(y = term_label, x = estimate, xmin = conf.low, xmax = conf.high)) +
+  geom_point(color = "darkred", size = 3) +
+  geom_errorbar(width = 0.2, color = "darkred") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
+  labs(
+    title = "HIV-specific predictors of heart age deviation (PLWH only)",
+    subtitle = "Multivariable linear regression; reference categories: undetectable viral load, male, Non-Hispanic White",
+    x = "β (95% CI), years of HAD",
+    y = NULL
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold"),
+    axis.text.y = element_text(size = 10, face = "bold")
+  )
+
+hiv_plot_obj
+
+ggsave(
+  filename = file.path(figures_dir, "Fig2_HIV_Severity_ForestPlot.png"),
+  plot = hiv_plot_obj,
+  width = 8,
+  height = 6,
+  dpi = 300,
+  bg = "white"
+)
+message("Fig 2 saved to: ", file.path(figures_dir, "Fig2_HIV_Severity_ForestPlot.png"))
+```
+
+------------------------------------------------------------------------
+
+## Supplemental Table S6: Mental Health and Social Determinants
+
+```{r suppl_s6_mice}
+# ==============================================================================
+#  MICE Imputation: Mental Health & Social Determinants (Full Sample)
+# ==============================================================================
+
+vars_for_mice <- c(
+  "heart_age_deviation", "had5",
+  "hiv_status", "SEX", "age_decade", "race_eth_4cat", "REGION_factor",
+  "CESDCAT", "PTSDCAT", "POTUSE", "COCUSE",
+  "NEIGHBSAFE", "LONELY3",
+  "viral_suppression", "cd4_100"
+)
+
+existing_vars <- vars_for_mice[vars_for_mice %in% names(modeling_data)]
+imp_data_raw <- modeling_data %>% select(all_of(existing_vars))
+
+ini <- mice(imp_data_raw, maxit = 0, printFlag = FALSE)
+meth <- ini$method
+pred <- ini$predictorMatrix
+
+meth["heart_age_deviation"] <- ""
+meth["had5"] <- ""
+
+imp_object <- mice(imp_data_raw, method = meth, predictorMatrix = pred,
+                   m = 10, printFlag = FALSE, seed = 123)
+
+fit_social_lm <- with(imp_object,
+  lm(heart_age_deviation ~ hiv_status + SEX + age_decade + race_eth_4cat +
+     CESDCAT + PTSDCAT + NEIGHBSAFE + LONELY3)
+)
+
+tbl_social <- tbl_regression(
+  fit_social_lm,
+  estimate_fun = ~ style_sigfig(.x, digits = 2),
+  label = list(
+    NEIGHBSAFE ~ "Neighborhood Safety (Higher = Unsafe)",
+    LONELY3 ~ "Loneliness Score"
+  )
+) %>%
+  bold_p() %>%
+  modify_caption("**Supplemental Table S6. Multiple-imputation model: mental health and social determinants predicting heart age deviation.**")
+
+tbl_social
+```
+
+------------------------------------------------------------------------
+
+## Supplemental Table S7 and Figure S1: Interaction Model
+
+```{r suppl_s7_and_figs1}
+# ==============================================================================
+#  Interaction Model: HIV Serostatus × Sex
+# ==============================================================================
+
+lm_aim2_int <- lm(
+  heart_age_deviation ~ hiv_status * SEX + age_decade + race_eth_4cat + REGION_factor,
+  data = modeling_data
+)
+
+tbl_aim2_int <- tbl_regression(
+  lm_aim2_int,
+  label = list(
+    hiv_status ~ "HIV Serostatus",
+    SEX ~ "Sex",
+    `hiv_status:SEX` ~ "Interaction: HIV × Sex"
+  )
+) %>%
+  bold_p() %>%
+  modify_caption("**Supplemental Table S7. Interaction model: HIV serostatus × sex predicting heart age deviation.**")
+
+tbl_aim2_int
+
+# --- Supplemental Figure S1: Predicted Marginal Means ---
+emm_aim2 <- emmeans(lm_aim2_int, ~ hiv_status | SEX)
+emm_aim2_df <- as_tibble(emm_aim2)
+
+ggplot(emm_aim2_df, aes(x = SEX, y = emmean, color = hiv_status, group = hiv_status)) +
+  geom_point(position = position_dodge(width = 0.3), size = 3) +
+  geom_line(position = position_dodge(width = 0.3)) +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
+                position = position_dodge(width = 0.3), width = 0.2) +
+  labs(
+    title = "Supplemental Fig S1: Predicted heart age deviation by sex and HIV serostatus",
+    subtitle = "Estimated marginal means with 95% CIs from interaction model",
+    y = "Predicted Heart Age Deviation (Years)",
+    x = "Sex",
+    color = "HIV Serostatus"
+  ) +
+  theme_minimal()
+
+ggsave(
+  filename = file.path(figures_dir, "FigS1_Emmeans_HAD_Sex_HIV.png"),
+  width = 7, height = 5, dpi = 300, bg = "white"
+)
+message("Suppl Fig S1 saved to: ", file.path(figures_dir, "FigS1_Emmeans_HAD_Sex_HIV.png"))
+```
+
+------------------------------------------------------------------------
+
+## Supplemental Figure S2: Heatmap of Prevalence
+
+```{r suppl_figs2_heatmap}
+#| fig.width: 10
+#| fig.height: 12
+
+# ---- Data Preparation Function ----
+prepare_viz_data <- function(data, outcome_var) {
+
+  strat_vars <- c("age_group", "SEX", "race_eth_4cat", "REGION_factor",
+                  "bmi_cat", "sbp_cat", "chol_cat", "egfr_cat",
+                  "CURSMOKE_BIN", "DIAB_BIN", "HYPERTENSIONMED", "STATINMED")
+
+  var_label_map <- c(
+    "age_group" = "Age Group",
+    "SEX" = "Sex",
+    "race_eth_4cat" = "Race/Ethnicity",
+    "REGION_factor" = "Region",
+    "bmi_cat" = "BMI Category",
+    "sbp_cat" = "SBP Category",
+    "chol_cat" = "Cholesterol",
+    "egfr_cat" = "eGFR Category",
+    "CURSMOKE_BIN" = "Current Smoker",
+    "DIAB_BIN" = "Diabetes",
+    "HYPERTENSIONMED" = "BP Meds",
+    "STATINMED" = "Statin Use"
+  )
+
+  plot_data <- purrr::map_dfr(strat_vars, function(v) {
+    data %>%
+      filter(!is.na(.data[[v]]), !is.na(hiv_status)) %>%
+      group_by(hiv_status, Subgroup = .data[[v]]) %>%
+      summarise(
+        total = n(),
+        n_events = sum(.data[[outcome_var]] %in% c("Yes", 1), na.rm = TRUE),
+        prev = n_events / total,
+        .groups = "drop"
+      ) %>%
+      mutate(
+        Category = var_label_map[v],
+        label_text = scales::percent(prev, accuracy = 1)
+      )
+  })
+
+  plot_data$Category <- factor(plot_data$Category, levels = var_label_map)
+  return(plot_data)
+}
+
+# ---- Plotting Function ----
+create_heatmap_plot <- function(plot_data, title, fill_color = "#08306b") {
+  ggplot(plot_data, aes(x = hiv_status, y = Subgroup, fill = prev)) +
+    geom_tile(color = "white", linewidth = 0.5) +
+    geom_text(aes(label = label_text), color = "black", size = 3) +
+    scale_fill_gradient(low = "#f7fbff", high = fill_color,
+                        labels = scales::percent, name = "Prevalence") +
+    facet_grid(Category ~ ., scales = "free_y", space = "free_y", switch = "y") +
+    labs(title = title, x = NULL, y = NULL) +
+    theme_minimal(base_size = 12) +
+    theme(
+      panel.grid = element_blank(),
+      strip.text.y.left = element_text(angle = 0, face = "bold", hjust = 1),
+      strip.placement = "outside",
+      axis.text.x = element_text(face = "bold", size = 10),
+      axis.text.y = element_text(size = 9),
+      legend.position = "bottom",
+      plot.title = element_text(face = "bold", hjust = 0.5),
+      strip.background = element_rect(fill = "grey95", color = NA)
+    )
+}
+
+# Supplemental Fig S2: HAD ≥ 5 heatmap (primary supplemental figure)
+data_had5 <- prepare_viz_data(analysis_clean, "had5")
+plot_had5 <- create_heatmap_plot(
+  data_had5,
+  title = "Supplemental Fig S2: Prevalence of Heart Age Deviation ≥5 Years by Subgroup",
+  fill_color = "#cb181d"
+)
+plot_had5
+
+ggsave(filename = file.path(figures_dir, "FigS2_Prevalence_HAD_ge5.png"),
+       plot = plot_had5, width = 8.5, height = 11, dpi = 300, bg = "white")
+
+# HAD > 0 heatmap (additional reference, not in main docx)
+data_had0 <- prepare_viz_data(analysis_clean, "ha_gt_age")
+plot_had0 <- create_heatmap_plot(
+  data_had0,
+  title = "Prevalence of Heart Age > Chronological Age (HAD > 0)",
+  fill_color = "#2171b5"
+)
+plot_had0
+
+ggsave(filename = file.path(figures_dir, "FigS_Prevalence_HAD_gt_0.png"),
+       plot = plot_had0, width = 8.5, height = 11, dpi = 300, bg = "white")
+
+message("Supplemental figures saved to: ", figures_dir)
+```
+
+------------------------------------------------------------------------
+
+## Supplemental Figures S3–S5: CD4 Diagnostic Plots
+
+```{r suppl_figs3_5_diagnostics}
+# ==============================================================================
+#  CD4 Diagnostics — kept as supplemental (per author request)
+# ==============================================================================
+
+plwh_diag <- analysis_clean %>%
+  filter(hiv_status == "PLWH") %>%
+  filter(!is.na(CD4N), !is.na(heart_age_deviation)) %>%
+  mutate(
+    cd4_cat = case_when(
+      CD4N < 200 ~ "<200 cells/mm3",
+      CD4N >= 200 & CD4N < 500 ~ "200-499 cells/mm3",
+      CD4N >= 500 ~ ">=500 cells/mm3",
+      TRUE ~ NA_character_
+    ) %>% factor(levels = c("<200 cells/mm3", "200-499 cells/mm3", ">=500 cells/mm3"))
+  )
+
+# Supplemental Figure S3: CD4 Count vs. HAD (scatter + linear + LOESS)
+p1 <- ggplot(plwh_diag, aes(x = CD4N, y = heart_age_deviation)) +
+  geom_point(alpha = 0.5, color = "grey40") +
+  geom_smooth(method = "lm", color = "red", fill = "#ffcccc") +
+  geom_smooth(method = "loess", color = "blue", se = FALSE, linetype = "dashed") +
+  labs(title = "Supplemental Fig S3: CD4 Count vs. Heart Age Deviation",
+       subtitle = "Red = Linear Fit, Blue = Loess (Flexible)",
+       x = "CD4 Count (cells/mm3)", y = "HAD (Years)") +
+  theme_minimal()
+
+# Supplemental Figure S4: HAD Distribution by CD4 Category (Boxplots)
+p2 <- ggplot(plwh_diag, aes(x = cd4_cat, y = heart_age_deviation, fill = cd4_cat)) +
+  geom_boxplot() +
+  stat_summary(fun = mean, geom = "point", shape = 23, size = 3, fill = "white") +
+  labs(title = "Supplemental Fig S4: HAD Distribution by CD4 Category",
+       x = NULL, y = "Heart Age Deviation") +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 15, hjust = 1))
+
+# Supplemental Figure S5: Age vs. CD4 (Survival bias check)
+p3 <- ggplot(plwh_diag, aes(x = AGEATVIS, y = CD4N)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm") +
+  labs(title = "Supplemental Fig S5: Age vs. CD4 Count",
+       subtitle = "Are older patients having higher CD4s (survival bias)?",
+       x = "Chronological Age", y = "CD4 Count") +
+  theme_minimal()
+
+(p1 | p2) / p3
+
+ggsave(
+  filename = file.path(figures_dir, "FigS3_S5_CD4_Diagnostics.png"),
+  plot = (p1 | p2) / p3,
+  width = 12, height = 8, dpi = 300, bg = "white"
+)
+message("Suppl Figs S3–S5 saved to: ", file.path(figures_dir, "FigS3_S5_CD4_Diagnostics.png"))
+
+# Correlation matrix
+cor_vars <- plwh_diag %>%
+  select(CD4N, heart_age_deviation, heart_age, prevent_risk, AGEATVIS)
+print("Correlation Matrix (CD4 and outcomes):")
+print(round(cor(cor_vars, use = "pairwise.complete.obs"), 3))
+
+# Sensitivity model excluding extreme CD4 outliers
+sensitivity_model <- lm(
+  heart_age_deviation ~ viral_suppression + CD4N + AGEATVIS + SEX + race_eth_4cat,
+  data = plwh_diag %>% filter(CD4N < 1500)
+)
+print("Sensitivity Model (Excluding CD4 > 1500):")
+print(summary(sensitivity_model)$coefficients["CD4N", ])
+```
+
+------------------------------------------------------------------------
+
+# Methods
+
+Analyses were conducted with `r stringr::word(R.Version()$version.string, 1, 3)` with the `tidyverse` (`r packageVersion("tidyverse")`), `rUM` (`r packageVersion("rUM")`), `table1` (`r packageVersion("table1")`) packages used to preprocess and summarize data.[@R-base; @R-tidyverse; @tidyverse2019; @R-rUM; @R-table1]
+
+# Results
+
+# Conclusion
+
+# References {.unnumbered}
+
+```{r}
+#| include: false
+
+# automatically create a bib database for loaded R packages & rUM
+knitr::write_bib(
+  c(
+    .packages(),
+    "rUM",
+    "table1"
+  ),
+  "packages.bib"
+)
+```
