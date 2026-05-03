@@ -61,7 +61,8 @@ Before claiming completion:
 ## Deliverables
 
 - Updated `Pan_et_al_Revised_AIDS.qmd`
-- Updated supplemental table/result text if supported by local data
+- Updated actual tables/results files separately from the manuscript source, preserving the current workflow in which manuscript text and table/result deliverables are maintained as separate files
+- Updated supplemental table/result text if supported by local data, with matching references in both the manuscript and the separate table/result deliverables
 - Updated bibliography if new citations are added
 - Updated `claude_x24067.md` documenting the revision round
 - Rendered manuscript outputs if rendering succeeds
