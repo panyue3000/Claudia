@@ -384,10 +384,10 @@ tbl_aim1_logistic <- tbl_regression(
 
 # ---- Replace p-value columns with significance stars ----
 tbl_linear_stars <- tbl_aim1_linear %>%
-  add_significance_stars(hide_p = TRUE, hide_ci = FALSE)
+  add_significance_stars(hide_p = TRUE, hide_ci = FALSE, hide_se = TRUE)
 
 tbl_logistic_stars <- tbl_aim1_logistic %>%
-  add_significance_stars(hide_p = TRUE, hide_ci = FALSE)
+  add_significance_stars(hide_p = TRUE, hide_ci = FALSE, hide_se = TRUE)
 
 # ---- Merge side-by-side as Table 3 ----
 tbl_T3 <- tbl_merge(
@@ -573,38 +573,69 @@ create_strat_prevalence <- function(data, outcome_var, caption) {
 #### Table 2: Prevalence Tables (Combined S4+S5, Promoted from Supplement)
 
 ```{r table2_prevalence_merged}
-# Depends on strat_setup (row_vars, var_labels_map, n_plwoh, n_plwh) and
-# strat_functions (create_strat_prevalence) — both defined above.
+# Depends on strat_setup (row_vars, var_labels_map, n_plwoh, n_plwh) — defined above.
+# Fix: merge at per-level (tbl_summary) stage BEFORE stacking to avoid
+# tbl_merge-on-tbl_stack row-alignment failure.
 
-tbl_s4_raw <- create_strat_prevalence(
-  analysis_clean, "had5",
-  "**[internal] S4: HAD >=5 years**"
+create_strat_prevalence_dual <- function(data, outcome_vars, outcome_labels, caption_text) {
+
+  tbl_list <- list()
+
+  for (var in row_vars) {
+    lvls <- if (is.factor(data[[var]])) levels(data[[var]]) else sort(unique(na.omit(data[[var]])))
+
+    rows_list <- lapply(lvls, function(lvl) {
+      subset_data <- data %>% filter(.data[[var]] == lvl)
+      if (nrow(subset_data) == 0) return(NULL)
+
+      # One tbl_summary per outcome for this subgroup level
+      sub_tbls <- lapply(seq_along(outcome_vars), function(i) {
+        subset_data %>%
+          select(hiv_status, all_of(outcome_vars[i])) %>%
+          tbl_summary(
+            by = hiv_status,
+            statistic = all_categorical() ~ "{n}/{N} ({p}%)",
+            digits = all_categorical() ~ 1,
+            label = list(all_of(outcome_vars[i]) ~ lvl),
+            missing = "no",
+            value = list(all_of(outcome_vars[i]) ~ "Yes")
+          ) %>%
+          add_p() %>%
+          add_significance_stars(hide_p = TRUE, hide_ci = TRUE) %>%
+          modify_header(label = "**Characteristic**")
+      })
+
+      tbl_merge(sub_tbls, tab_spanner = outcome_labels)
+    })
+
+    rows_list <- rows_list[!sapply(rows_list, is.null)]
+    if (length(rows_list) > 0) tbl_list[[var]] <- tbl_stack(rows_list)
+  }
+
+  header_plwoh <- paste0("**PLWoH**\nN = ", format(n_plwoh, big.mark = ","))
+  header_plwh  <- paste0("**PLWH**\nN = ", format(n_plwh, big.mark = ","))
+
+  tbl_stack(tbl_list, group_header = var_labels_map[row_vars]) %>%
+    modify_caption(caption_text) %>%
+    bold_labels() %>%
+    modify_header(
+      stat_1_1 ~ header_plwoh,
+      stat_2_1 ~ header_plwh,
+      stat_1_2 ~ header_plwoh,
+      stat_2_2 ~ header_plwh
+    ) %>%
+    modify_footnote(
+      update = everything() ~
+        "PLWoH = people without HIV; PLWH = people with HIV. Values are n/N (%). p-values from chi-square test comparing PLWoH vs PLWH within each subgroup. *p<0.05; **p<0.01; ***p<0.001."
+    )
+}
+
+tbl_T2 <- create_strat_prevalence_dual(
+  data          = analysis_clean,
+  outcome_vars  = c("had5", "ha_gt_age"),
+  outcome_labels = c("**HAD ≥5 years**", "**Heart age > chronological age**"),
+  caption_text  = "**Table 2. Prevalence of elevated heart age deviation (HAD ≥5 years) and heart age exceeding chronological age, by HIV serostatus and clinical subgroups. Values are n/N (%).**"
 )
-tbl_s5_raw <- create_strat_prevalence(
-  analysis_clean, "ha_gt_age",
-  "**[internal] S5: HA > chronological age**"
-)
-
-# Add significance stars, hide p-value columns
-tbl_s4_stars <- tbl_s4_raw %>%
-  add_significance_stars(hide_p = TRUE, hide_ci = FALSE)
-tbl_s5_stars <- tbl_s5_raw %>%
-  add_significance_stars(hide_p = TRUE, hide_ci = FALSE)
-
-# Merge side-by-side as Table 2
-tbl_T2 <- tbl_merge(
-  tbls = list(tbl_s4_stars, tbl_s5_stars),
-  tab_spanner = c(
-    "**HAD ≥5 years**",
-    "**Heart age > chronological age**"
-  )
-) %>%
-  modify_caption(
-    "**Table 2. Prevalence of elevated heart age deviation (HAD ≥5 years) and heart age exceeding chronological age, by HIV serostatus and clinical subgroups. Values are n/N (%).**"
-  ) %>%
-  modify_footnote(
-    update = everything() ~ "PLWoH = people without HIV; PLWH = people with HIV. p-values from chi-square test comparing PLWoH vs PLWH within each subgroup. *p<0.05; **p<0.01; ***p<0.001."
-  )
 
 tbl_T2
 ```
@@ -800,6 +831,21 @@ ggsave(
   bg = "white"
 )
 message("Combined Fig 1 (Panels A+B) saved to: ", file.path(figures_dir, "Fig1_Combined.png"))
+
+# ---- Print combined figure inline ----
+fig1_combined +
+  plot_annotation(
+    caption = paste0(
+      "Fig. 1. Forest plots of predictors of heart age deviation. ",
+      "Panel A: predictors of elevated HAD (≥5 years) from multivariable logistic regression ",
+      "(odds ratios and 95% CIs; reference categories: HIV-negative, male, Non-Hispanic White, West; ",
+      "age per 10-year increment). ",
+      "Panel B: HIV-specific predictors of HAD among people with HIV from multivariable linear regression ",
+      "(β coefficients and 95% CIs; reference categories: undetectable viral load, male, ",
+      "Non-Hispanic White; CD4 count per 100 cells/μL; age per 10 years)."
+    ),
+    theme = theme(plot.caption = element_text(size = 8, hjust = 0, margin = margin(t = 8)))
+  )
 ```
 
 ------------------------------------------------------------------------
