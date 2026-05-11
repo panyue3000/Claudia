@@ -281,7 +281,7 @@ table1 <- analysis_clean %>%
       all_continuous() ~ "{mean} ({sd})",
       all_categorical() ~ "{n} ({p}%)"
     ),
-    digits = list(all_continuous() ~ 1, all_categorical() ~ 1)
+    digits = list(all_continuous() ~ 1, all_categorical() ~ c(0, 1))
   ) %>%
   add_p() %>%
   add_overall() %>%
@@ -391,7 +391,7 @@ tbl_linear_stars <- tbl_aim1_linear %>%
   ) %>%
   # Merge stars-augmented estimate with formatted CI string; pattern must include {stars}
   modify_column_merge(
-    pattern = "{estimate}{stars} ({ci})",
+    pattern = "{estimate} ({ci}){stars}",
     rows    = !is.na(ci)
   ) %>%
   modify_column_hide(columns = any_of(c("conf.low", "conf.high", "std.error", "ci"))) %>%
@@ -404,7 +404,7 @@ tbl_logistic_stars <- tbl_aim1_logistic %>%
     hide_se  = TRUE
   ) %>%
   modify_column_merge(
-    pattern = "{estimate}{stars} ({ci})",
+    pattern = "{estimate} ({ci}){stars}",
     rows    = !is.na(ci)
   ) %>%
   modify_column_hide(columns = any_of(c("conf.low", "conf.high", "std.error", "ci"))) %>%
@@ -423,7 +423,7 @@ tbl_T3 <- tbl_merge(
   ) %>%
   modify_footnote(
     update = everything() ~
-      "Reference categories: HIV-negative, male, Non-Hispanic White, West US region. Age modeled per 10-year increment. *p<0.05; **p<0.01; ***p<0.001."
+      "Reference categories: HIV-negative, male, Non-Hispanic White, West US region. Age modeled per 10-year increment. OR = Odds Ratio. *p<0.05; **p<0.01; ***p<0.001."
   )
 
 tbl_T3
@@ -893,16 +893,19 @@ fig1b_tight <- fig1b_obj +
 fig1_combined <- fig1a_tight / fig1b_tight +
   plot_layout(heights = c(1, 1)) +
   plot_annotation(
+    title = "Fig. 1. Forest plots of predictors of heart age deviation.",
     caption = paste0(
-      "Fig. 1. Forest plots of predictors of heart age deviation. ",
       "Panel A: predictors of elevated HAD (≥5 years) from multivariable logistic regression ",
       "(odds ratios and 95% CIs; reference categories: HIV-negative, male, Non-Hispanic White, West; ",
-      "age per 10-year increment). ",
+      "age per 10-year increment).\n",
       "Panel B: HIV-specific predictors of HAD among people with HIV from multivariable linear regression ",
       "(β coefficients and 95% CIs; reference categories: undetectable viral load, male, ",
       "Non-Hispanic White; CD4 count per 100 cells/μL; age per 10 years)."
     ),
-    theme = theme(plot.caption = element_text(size = 8, hjust = 0, margin = margin(t = 10)))
+    theme = theme(
+      plot.title   = element_text(size = 11, face = "bold", hjust = 0, margin = margin(b = 8)),
+      plot.caption = element_text(size = 8, hjust = 0, margin = margin(t = 10))
+    )
   )
 
 ggsave(
