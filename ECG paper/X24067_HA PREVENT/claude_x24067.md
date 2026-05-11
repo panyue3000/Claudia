@@ -69,11 +69,30 @@
 | E. Pan_Aims_Scholar_2024.docx | Grant specific aims | Scholar 2024 award |
 | F. Pan_Strategy_Scholar_2024.docx | Grant research strategy | Scholar 2024 award |
 | **analysis/** (subfolder) | All analysis source + outputs | See below |
-| analysis/X24067_Pan_Heart Age v2.qmd | **Figure-generating script** for Fig 1 / Fig 2 | Aim 1 forest plot ≈ line 689; Aim 4 forest plot ≈ line 855; uses absolute Windows path to `prevent_risk.sas7bdat` |
+| analysis/X24067_Pan_Heart Age v2.qmd | **Canonical analysis script** — ALL tables + figures | Confirmed 2026-05-11: all 41 chunks render cleanly; spot-checks pass. Data from `data/prevent_risk.sas7bdat`. See R dependency notes below. |
 | analysis/X24067_Pan_Heart Age.qmd | Earlier exploratory analysis | Reads `prevent_risk_baseline.csv` |
 | analysis/X24067_Pan_Heart Age.pdf | Rendered exploratory PDF | |
 | analysis/X24067_Pan_Heart Age*.html | Dated rendered analysis HTMLs (09/12/2025, 01/17/2026, 01/23/2026) | Snapshots; do not edit |
-| **figures/** (subfolder) | Causal-pathway and table snapshot images | causal_pathway_*.{png,pdf}; Table 5 + table 6 PNG snapshots |
+| **figures/** (subfolder) | Causal-pathway, table snapshots, and current submission figures | `Fig1_Combined.png` (new combined Fig 1A+B); `Fig1_HAD5_*.png` and `Fig2_HIV_Severity_*.png` retired (standalone) |
+| **AIDS/** (subfolder) | AIDS journal submission package | `Pan_et_al_AIDS.qmd` (trimmed submission manuscript); `01_Manuscript.docx`; `04_Cover_Letter.docx`; `CHANGES.md`; `CODEX_REVIEW_PROMPT.md` |
+
+> **R dependencies for `analysis/X24067_Pan_Heart Age v2.qmd` (R 4.6.0 fresh install — install these manually):**
+>
+> | Package | Install command | Purpose |
+> |---------|----------------|---------|
+> | sumExtras 1.0.0 | `remotes::install_github("kyleGrealis/sumExtras")` | JAMA gtsummary theme (`use_jama_theme()`) |
+> | broom.helpers | `install.packages("broom.helpers")` | Required by `tbl_regression()` |
+> | car ≥3.1-2 | `install.packages("car")` | Required by `add_global_p()` |
+> | parameters ≥0.20.2 | `install.packages("parameters")` | Required by `add_global_p()` |
+> | rUM | `remotes::install_github("RaymondBalise/rUM")` | Session info / `packages.bib` only (end of file) |
+>
+> **Filename conflict workaround:** Both `X24067_Pan_Heart Age v2.qmd` (spaces) and `X24067_Pan_Heart-Age-v2.rmarkdown` (hyphens) exist. Quarto fails when it tries to create the hyphened intermediate and finds the `.rmarkdown` already there. Fix:
+> ```bash
+> cd "analysis"
+> mv "X24067_Pan_Heart-Age-v2.rmarkdown" "X24067_Pan_Heart-Age-v2.rmarkdown.bak"
+> quarto render "X24067_Pan_Heart Age v2.qmd" --to html
+> mv "X24067_Pan_Heart-Age-v2.rmarkdown.bak" "X24067_Pan_Heart-Age-v2.rmarkdown"
+> ```
 
 ---
 
@@ -112,35 +131,32 @@ The main file `Pan_et_al_Revised_AIDS.qmd` has this section structure:
 ## Supplemental Material (Tables S1–S7; Figs S1–S2)
 ```
 
-### Main Text Tables (4 tables — AIDS journal limit)
-| Table | Content | In-text reference |
-|-------|---------|-------------------|
-| **Table 1** | Descriptive characteristics by HIV serostatus | (Table 1) |
-| **Table 2** | Multivariable linear regression: HAD (continuous) | (Table 2) |
-| **Table 3** | Multivariable logistic regression: HAD ≥5 years | (Table 3; Fig 1) |
-| **Table 4** | HIV-specific model: viral load + CD4 → HAD (PLWH only) | (Table 4; Fig 2) |
+### Main Text Tables (4 tables) + Figures (1 combined) = 5 total ≤ AIDS limit
 
-### Main Text Figures (2 figures)
-| Figure | Content | In-text reference |
-|--------|---------|-------------------|
-| **Fig 1** | Forest plot — logistic regression ORs for HAD ≥5 years | (Table 3; Fig 1) |
-| **Fig 2** | Forest plot — HIV-specific predictors (β coefficients) | (Table 4; Fig 2) |
+| Item | Content | In-text reference | Figure file |
+|------|---------|-------------------|-------------|
+| **Table 1** | Descriptive characteristics by HIV serostatus | (Table 1) | — |
+| **Table 2** | Prevalence: HAD ≥5 yrs + HA > chron. age side-by-side (promoted from Suppl S4+S5; chi-square stars) | (Table 2; ...) | — |
+| **Table 3** | Merged regression: Panel A linear β + Panel B logistic OR (significance stars) | (Table 3, Panel A) / (Table 3, Panel B; Fig 1A) | — |
+| **Table 4** | HIV severity model: viral load + CD4 → HAD (PLWH only) | (Table 4; Fig 1B) | — |
+| **Fig 1** | Combined: Panel A = logistic ORs forest; Panel B = HIV severity β forest | (Fig 1A) / (Fig 1B) | `figures/Fig1_Combined.png` |
 
-### Supplemental Material (Online Supplementary)
-| Label | Content | Previously |
-|-------|---------|------------|
-| Supplemental Table S1 | PREVENT 10-year CVD risk by subgroups | Table 2 |
-| Supplemental Table S2 | HAD (years) by subgroups | Table 3 |
-| Supplemental Table S3 | Heart age by subgroups | Table 4 |
-| Supplemental Table S4 | Prevalence of HAD ≥5 years by subgroups | Table 5 |
-| Supplemental Table S5 | Prevalence of HA > chronological age by subgroups | Table 6 |
-| Supplemental Table S6 | MICE model: mental health & social determinants → HAD | Table 9 |
-| Supplemental Table S7 | HIV × sex interaction model | Table S1 |
-| Supplemental Table S8 | Sex-stratified descriptive characteristics and HAD by HIV serostatus | Added May 2026 |
-| Supplemental Fig S1 | Predicted HAD by sex × HIV serostatus (marginal means) | Fig 2 |
-| Supplemental Fig S2 | Heatmap — prevalence of HAD ≥5 years across subgroups | Fig 4 |
+### Supplemental Material (Online Supplementary — renumbered 2026-05-11)
 
-**Rationale for supplemental designation:** AIDS journal limits main-text tables + figures to ~4 each. Tables 1, 2, 3, 4 contain the primary analytical results supporting all conclusions. Tables S1–S7 are descriptive stratified tables and secondary analyses; Figs S1–S2 are exploratory visualizations.
+| Label | Content | Status |
+|-------|---------|--------|
+| Supplemental Table S1 | PREVENT 10-year CVD risk by subgroups | unchanged |
+| Supplemental Table S2 | HAD (years) by subgroups | unchanged |
+| Supplemental Table S3 | Heart age by subgroups | unchanged |
+| ~~Supplemental Table S4~~ | Prevalence HAD ≥5 years — **promoted to main Table 2** | retired from supplement |
+| ~~Supplemental Table S5~~ | Prevalence HA > chron. age — **promoted to main Table 2** | retired from supplement |
+| **Supplemental Table S4** (was S6) | MICE model: mental health & social determinants → HAD | renumbered |
+| **Supplemental Table S5** (was S7) | HIV × sex interaction model | renumbered |
+| **Supplemental Table S6** (was S8) | Sex-stratified descriptive characteristics and HAD | renumbered |
+| Supplemental Fig S1 | Predicted HAD by sex × HIV serostatus (marginal means) | unchanged |
+| Supplemental Fig S2 | Heatmap — prevalence of HAD ≥5 years across subgroups | unchanged |
+
+**AIDS journal compliance:** 4 tables + 1 figure = 5 combined ≤ AIDS limit of 5 ✓
 
 ---
 

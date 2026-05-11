@@ -76,7 +76,7 @@ options(scipen = 999)
 This is for X24067_Pan_Heart Age. This analysis compares Heart Age outcomes between People Living Without HIV (PLWoH) and People Living With HIV (PLWH) (combining Seroprevalent and Seroconverter groups).
 
 Output order matches `X24067_Tables and Figures.docx`:
-Table 1 → Table 2 → Table 3 → Fig 1 → Suppl Tables S1–S5 → Suppl Table S8 → Table 4 → Fig 2 → Suppl Table S6 → Suppl Table S7 → Suppl Fig S1 → Suppl Fig S2 → Suppl Figs S3–S5.
+Table 1 → Table 2 (merged S4+S5) → Table 3 (merged reg, Fig 1A+B) → Suppl Tables S1–S3 → Suppl S4 (MICE, was S6) → Suppl S5 (interaction, was S7) → Table 4 → Suppl S6 (sex-strat, was S8) → Suppl Fig S1 → Suppl Fig S2 → Suppl Figs S3–S5.
 
 ## 0. Load and Clean Data
 
@@ -294,7 +294,12 @@ table1
 
 ------------------------------------------------------------------------
 
-## Tables 2–3 and Figure 1: Multivariable Regression
+<!-- Table 2 output appears here in document flow but is generated after strat_functions are defined.
+     See the table2_prevalence_merged chunk below (placed after strat_functions). -->
+
+------------------------------------------------------------------------
+
+## Table 3 and Figure 1: Multivariable Regression (Merged Panels A + B)
 
 ```{r modeling_setup}
 # ==============================================================================
@@ -333,14 +338,22 @@ modeling_data <- analysis_clean %>%
   )
 ```
 
-### Table 2: Linear Regression (Continuous HAD)
+### Table 3 (merged) and Figure 1 (combined panels A + B)
 
-```{r table2_linear}
+```{r table3_merged_and_fig1}
+# ---- Models (unchanged) ----
 lm_aim1 <- lm(
   heart_age_deviation ~ hiv_status + age_decade + SEX + race_eth_4cat + REGION_factor,
   data = modeling_data
 )
 
+glm_aim1 <- glm(
+  had5 ~ hiv_status + age_decade + SEX + race_eth_4cat + REGION_factor,
+  data = modeling_data,
+  family = binomial
+)
+
+# ---- Individual gtsummary tables (with global p, used as source for merge) ----
 tbl_aim1_linear <- tbl_regression(
   lm_aim1,
   estimate_fun = ~ style_sigfig(.x, digits = 2),
@@ -353,20 +366,7 @@ tbl_aim1_linear <- tbl_regression(
   )
 ) %>%
   bold_p() %>%
-  add_global_p() %>%
-  modify_caption("**Table 2. Multivariable linear regression predicting heart age deviation (years).**")
-
-tbl_aim1_linear
-```
-
-### Table 3: Logistic Regression (HAD ≥5 Years) and Figure 1
-
-```{r table3_logistic_and_fig1}
-glm_aim1 <- glm(
-  had5 ~ hiv_status + age_decade + SEX + race_eth_4cat + REGION_factor,
-  data = modeling_data,
-  family = binomial
-)
+  add_global_p()
 
 tbl_aim1_logistic <- tbl_regression(
   glm_aim1,
@@ -380,12 +380,34 @@ tbl_aim1_logistic <- tbl_regression(
   )
 ) %>%
   bold_p() %>%
-  add_global_p() %>%
-  modify_caption("**Table 3. Multivariable logistic regression predicting elevated heart age deviation (≥5 years).**")
+  add_global_p()
 
-tbl_aim1_logistic
+# ---- Replace p-value columns with significance stars ----
+tbl_linear_stars <- tbl_aim1_linear %>%
+  add_significance_stars(hide_p = TRUE, hide_ci = FALSE)
 
-# --- Figure 1: Forest Plot ---
+tbl_logistic_stars <- tbl_aim1_logistic %>%
+  add_significance_stars(hide_p = TRUE, hide_ci = FALSE)
+
+# ---- Merge side-by-side as Table 3 ----
+tbl_T3 <- tbl_merge(
+  tbls = list(tbl_linear_stars, tbl_logistic_stars),
+  tab_spanner = c(
+    "**Panel A: β (95% CI)**",
+    "**Panel B: OR (95% CI)**"
+  )
+) %>%
+  modify_caption(
+    "**Table 3. Multivariable regression predicting heart age deviation. Panel A: linear regression (continuous HAD, years). Panel B: logistic regression (elevated HAD ≥5 years).**"
+  ) %>%
+  modify_footnote(
+    update = everything() ~
+      "Reference categories: HIV-negative, male, Non-Hispanic White, West US region. Age modeled per 10-year increment. *p<0.05; **p<0.01; ***p<0.001."
+  )
+
+tbl_T3
+
+# ---- Figure 1A: Logistic forest plot (Panel A) ----
 plot_data_aim1 <- broom::tidy(glm_aim1, conf.int = TRUE, exponentiate = TRUE) %>%
   filter(term != "(Intercept)") %>%
   mutate(
@@ -405,29 +427,30 @@ plot_data_aim1 <- broom::tidy(glm_aim1, conf.int = TRUE, exponentiate = TRUE) %>
     term_label = fct_reorder(term_label, estimate)
   )
 
-ggplot(plot_data_aim1, aes(y = term_label, x = estimate, xmin = conf.low, xmax = conf.high)) +
+fig1a_obj <- ggplot(plot_data_aim1, aes(y = term_label, x = estimate, xmin = conf.low, xmax = conf.high)) +
   geom_point(color = "#0072B2", size = 3) +
   geom_errorbar(width = 0.2, color = "#0072B2") +
   geom_vline(xintercept = 1, linetype = "dashed", color = "gray50") +
   labs(
-    title = "Predictors of elevated heart age deviation (HAD ≥ 5 years)",
-    subtitle = "Multivariable logistic regression; reference categories: HIV-negative, male, Non-Hispanic White, West",
+    title = "A. Predictors of elevated HAD (≥5 years)",
+    subtitle = "Logistic regression; ref: HIV-negative, male, Non-Hispanic White, West",
     x = "Odds ratio (95% CI)",
     y = NULL
   ) +
   theme_minimal() +
   theme(plot.title = element_text(face = "bold"))
 
-ggsave(
-  filename = file.path(figures_dir, "Fig1_HAD5_LogisticForestPlot.png"),
-  width = 8, height = 6, dpi = 300, bg = "white"
-)
-message("Fig 1 saved to: ", file.path(figures_dir, "Fig1_HAD5_LogisticForestPlot.png"))
+fig1a_obj
+
+# RETIRED standalone save (kept for reference):
+# ggsave(filename = file.path(figures_dir, "Fig1_HAD5_LogisticForestPlot.png"),
+#        width = 8, height = 6, dpi = 300, bg = "white")
+# Combined Fig 1 is saved after Panel B is built (see table4_and_fig1b chunk).
 ```
 
 ------------------------------------------------------------------------
 
-## Supplemental Tables S1–S5: Stratified Outcomes by Subgroup
+## Supplemental Tables S1–S3: Stratified Outcomes by Subgroup (S4/S5 promoted to main Table 2)
 
 ```{r strat_setup}
 # Define the subgroups for stratification
@@ -547,6 +570,45 @@ create_strat_prevalence <- function(data, outcome_var, caption) {
 }
 ```
 
+#### Table 2: Prevalence Tables (Combined S4+S5, Promoted from Supplement)
+
+```{r table2_prevalence_merged}
+# Depends on strat_setup (row_vars, var_labels_map, n_plwoh, n_plwh) and
+# strat_functions (create_strat_prevalence) — both defined above.
+
+tbl_s4_raw <- create_strat_prevalence(
+  analysis_clean, "had5",
+  "**[internal] S4: HAD >=5 years**"
+)
+tbl_s5_raw <- create_strat_prevalence(
+  analysis_clean, "ha_gt_age",
+  "**[internal] S5: HA > chronological age**"
+)
+
+# Add significance stars, hide p-value columns
+tbl_s4_stars <- tbl_s4_raw %>%
+  add_significance_stars(hide_p = TRUE, hide_ci = FALSE)
+tbl_s5_stars <- tbl_s5_raw %>%
+  add_significance_stars(hide_p = TRUE, hide_ci = FALSE)
+
+# Merge side-by-side as Table 2
+tbl_T2 <- tbl_merge(
+  tbls = list(tbl_s4_stars, tbl_s5_stars),
+  tab_spanner = c(
+    "**HAD ≥5 years**",
+    "**Heart age > chronological age**"
+  )
+) %>%
+  modify_caption(
+    "**Table 2. Prevalence of elevated heart age deviation (HAD ≥5 years) and heart age exceeding chronological age, by HIV serostatus and clinical subgroups. Values are n/N (%).**"
+  ) %>%
+  modify_footnote(
+    update = everything() ~ "PLWoH = people without HIV; PLWH = people with HIV. p-values from chi-square test comparing PLWoH vs PLWH within each subgroup. *p<0.05; **p<0.01; ***p<0.001."
+  )
+
+tbl_T2
+```
+
 #### Supplemental Table S1: PREVENT 10-Year Risk
 
 ```{r suppl_s1}
@@ -577,29 +639,22 @@ create_strat_continuous(
 )
 ```
 
-#### Supplemental Table S4: Prevalence of HAD ≥5 Years
+#### Supplemental Tables S4 and S5: RETIRED — promoted to main Table 2
 
-```{r suppl_s4}
-create_strat_prevalence(
-  analysis_clean,
-  "had5",
-  "**Supplemental Table S4. Prevalence of heart age deviation ≥5 years by HIV serostatus and clinical subgroups. Note: the ≥5-year threshold is exploratory and has not been validated against hard CVD endpoints in PLWH.**"
-)
+```{r suppl_s4_retired, eval=FALSE}
+# RETIRED: S4 (HAD >=5 prevalence) and S5 (HA > chron age prevalence) are now combined
+# and promoted to main Table 2 (see table2_prevalence_merged chunk above).
+# Kept here as comments for traceability; eval=FALSE prevents execution.
+
+# create_strat_prevalence(analysis_clean, "had5",
+#   "**Supplemental Table S4. Prevalence of heart age deviation >=5 years...**")
+# create_strat_prevalence(analysis_clean, "ha_gt_age",
+#   "**Supplemental Table S5. Prevalence of heart age > chronological age...**")
 ```
 
-#### Supplemental Table S5: Prevalence of Heart Age > Chronological Age
+#### Supplemental Table S6: Sex-Stratified Descriptive Characteristics by HIV Serostatus (was S8)
 
-```{r suppl_s5}
-create_strat_prevalence(
-  analysis_clean,
-  "ha_gt_age",
-  "**Supplemental Table S5. Prevalence of heart age > chronological age by HIV serostatus and clinical subgroups.**"
-)
-```
-
-#### Supplemental Table S8: Sex-Stratified Descriptive Characteristics by HIV Serostatus
-
-```{r suppl_s8_sex_hiv_descriptives}
+```{r suppl_s6_sex_hiv}
 fmt_mean_sd <- function(x, digits = 1) {
   sprintf(
     paste0("%.", digits, "f (%.", digits, "f)"),
@@ -650,7 +705,7 @@ write_csv(
 
 write_lines(
   c(
-    "# Supplemental Table S8",
+    "# Supplemental Table S6 (was S8)",
     "",
     "Sex-stratified descriptive characteristics and heart age deviation by HIV serostatus.",
     "",
@@ -664,9 +719,9 @@ sex_hiv_supp_table
 
 ------------------------------------------------------------------------
 
-## Table 4 and Figure 2: HIV Severity Model (PLWH Only)
+## Table 4 and Figure 1B: HIV Severity Model (PLWH Only)
 
-```{r table4_and_fig2}
+```{r table4_and_fig1b}
 # Filter to PLWH with complete viral load and CD4 data
 plwh_data <- modeling_data %>%
   filter(hiv_status == "PLWH") %>%
@@ -689,11 +744,11 @@ tbl_hiv_severity <- tbl_regression(
   )
 ) %>%
   bold_p() %>%
-  modify_caption("**Table 4. HIV severity model (PLWH only): viral load and CD4 count predicting heart age deviation.**")
+  modify_caption("**Table 4. HIV severity model (people with HIV only): viral load and CD4 count predicting heart age deviation.**")
 
 tbl_hiv_severity
 
-# --- Figure 2: Forest Plot ---
+# ---- Figure 1B: HIV severity forest plot (Panel B of combined Fig 1) ----
 plot_hiv <- broom::tidy(lm_hiv_severity, conf.int = TRUE) %>%
   filter(term != "(Intercept)") %>%
   mutate(
@@ -710,13 +765,13 @@ plot_hiv <- broom::tidy(lm_hiv_severity, conf.int = TRUE) %>%
     term_label = fct_reorder(term_label, estimate)
   )
 
-hiv_plot_obj <- ggplot(plot_hiv, aes(y = term_label, x = estimate, xmin = conf.low, xmax = conf.high)) +
+fig1b_obj <- ggplot(plot_hiv, aes(y = term_label, x = estimate, xmin = conf.low, xmax = conf.high)) +
   geom_point(color = "darkred", size = 3) +
   geom_errorbar(width = 0.2, color = "darkred") +
   geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
   labs(
-    title = "HIV-specific predictors of heart age deviation (PLWH only)",
-    subtitle = "Multivariable linear regression; reference categories: undetectable viral load, male, Non-Hispanic White",
+    title = "B. HIV-specific predictors of HAD (PLWH only)",
+    subtitle = "Linear regression; ref: undetectable viral load, male, Non-Hispanic White",
     x = "β (95% CI), years of HAD",
     y = NULL
   ) +
@@ -726,24 +781,32 @@ hiv_plot_obj <- ggplot(plot_hiv, aes(y = term_label, x = estimate, xmin = conf.l
     axis.text.y = element_text(size = 10, face = "bold")
   )
 
-hiv_plot_obj
+fig1b_obj
+
+# RETIRED standalone save (kept for reference):
+# ggsave(filename = file.path(figures_dir, "Fig2_HIV_Severity_ForestPlot.png"),
+#        plot = fig1b_obj, width = 8, height = 6, dpi = 300, bg = "white")
+
+# ---- Combined Figure 1 (Panels A + B via patchwork) ----
+fig1_combined <- fig1a_obj + fig1b_obj +
+  plot_layout(ncol = 2, widths = c(1, 1))
 
 ggsave(
-  filename = file.path(figures_dir, "Fig2_HIV_Severity_ForestPlot.png"),
-  plot = hiv_plot_obj,
-  width = 8,
-  height = 6,
+  filename = file.path(figures_dir, "Fig1_Combined.png"),
+  plot = fig1_combined,
+  width = 16,
+  height = 7,
   dpi = 300,
   bg = "white"
 )
-message("Fig 2 saved to: ", file.path(figures_dir, "Fig2_HIV_Severity_ForestPlot.png"))
+message("Combined Fig 1 (Panels A+B) saved to: ", file.path(figures_dir, "Fig1_Combined.png"))
 ```
 
 ------------------------------------------------------------------------
 
-## Supplemental Table S6: Mental Health and Social Determinants
+## Supplemental Table S4: Mental Health and Social Determinants (was S6)
 
-```{r suppl_s6_mice}
+```{r suppl_s4_mice}
 # ==============================================================================
 #  MICE Imputation: Mental Health & Social Determinants (Full Sample)
 # ==============================================================================
@@ -783,16 +846,16 @@ tbl_social <- tbl_regression(
   )
 ) %>%
   bold_p() %>%
-  modify_caption("**Supplemental Table S6. Multiple-imputation model: mental health and social determinants predicting heart age deviation.**")
+  modify_caption("**Supplemental Table S4. Multiple-imputation model: mental health and social determinants predicting heart age deviation.**")
 
 tbl_social
 ```
 
 ------------------------------------------------------------------------
 
-## Supplemental Table S7 and Figure S1: Interaction Model
+## Supplemental Table S5 and Figure S1: Interaction Model (was S7)
 
-```{r suppl_s7_and_figs1}
+```{r suppl_s5_and_figs1}
 # ==============================================================================
 #  Interaction Model: HIV Serostatus × Sex
 # ==============================================================================
@@ -811,7 +874,7 @@ tbl_aim2_int <- tbl_regression(
   )
 ) %>%
   bold_p() %>%
-  modify_caption("**Supplemental Table S7. Interaction model: HIV serostatus × sex predicting heart age deviation.**")
+  modify_caption("**Supplemental Table S5. Interaction model: HIV serostatus × sex predicting heart age deviation.**")
 
 tbl_aim2_int
 

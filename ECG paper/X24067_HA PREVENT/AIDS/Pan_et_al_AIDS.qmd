@@ -1,0 +1,255 @@
+---
+title: "Heart Age and Heart-Age Deviation Among People With and Without HIV in the United States"
+shorttitle: "Heart age in people with and without HIV"
+format:
+  docx:
+    toc: false
+    number-sections: false
+  html:
+    self-contained: true
+    toc: true
+    toc-depth: 3
+bibliography: ../references_aids.bib
+csl: ../aids.csl
+editor: visual
+---
+
+<!-- AIDS submission version (trimmed for AIDS Original Paper limits). -->
+<!-- Source: ../Pan_et_al_Revised_AIDS.qmd. See AIDS/CHANGES.md for change log. -->
+
+<!-- TITLE PAGE -->
+
+**Title:** Heart Age and Heart-Age Deviation Among People With and Without HIV in the United States
+
+**Short title (running head, 49 characters):** Heart age in people with and without HIV
+
+**Authors:** Yue Pan^1^\*, Daniel J. Feaster^1^, Emily M. Cherenack^2^, Nicholas Fonseca Nogueira^3^, Valentina Stosor^4^, Matthew J. Mimiaga^5^, Kaitlin Bodnar^6^, Joseph B. Margolick^7^, Emily B. Levitan^8^, Caitlin A. Moran^9^, Michelle Floris-Moore^10^, Gypsyamber D'Souza^7^, Mardge Cohen^11^, Elise D. Riley^12^, Adam J. Visconti^13^, Tracey Wilson^14^, David B. Hanna^15^, Maria Luisa Alcaide^16^, Deborah L. Jones^17^, Claudia A. Martinez^18^
+
+::: affiliations
+^1^ Department of Public Health Sciences, Division of Biostatistics and Bioinformatics, University of Miami Miller School of Medicine, Miami, FL, USA
+
+^2^ Department of Psychiatry and Behavioral Sciences, Duke University School of Medicine, Durham, NC, USA
+
+^3^ Department of Medicine, Division of Infectious Diseases, University of Miami Miller School of Medicine, Miami, FL, USA
+
+^4^ Northwestern University Feinberg School of Medicine, Chicago, IL, USA
+
+^5^ Department of Epidemiology, UCLA Fielding School of Public Health, Los Angeles, CA, USA
+
+^6^ University of Pittsburgh, Pittsburgh, PA, USA
+
+^7^ Johns Hopkins Bloomberg School of Public Health, Baltimore, MD, USA
+
+^8^ University of Alabama at Birmingham School of Public Health, Birmingham, AL, USA
+
+^9^ Department of Medicine, Emory University School of Medicine, Atlanta, GA, USA
+
+^10^ University of North Carolina at Chapel Hill School of Medicine, Chapel Hill, NC, USA
+
+^11^ Chicago–Cook County Clinical Research Site, Chicago, IL, USA
+
+^12^ University of California, San Francisco, San Francisco, CA, USA
+
+^13^ Georgetown University, Washington, DC, USA
+
+^14^ SUNY Downstate Health Sciences University, Brooklyn, NY, USA
+
+^15^ Albert Einstein College of Medicine, Bronx, NY, USA
+
+^16^ Division of Infectious Diseases, Department of Medicine, University of Miami Miller School of Medicine, Miami, FL, USA
+
+^17^ Department of Psychiatry and Behavioral Sciences, University of Miami Miller School of Medicine, Miami, FL, USA
+
+^18^ Department of Medicine (Cardiology), University of Miami Miller School of Medicine, Miami, FL, USA
+:::
+
+\* Corresponding author: Yue Pan, Department of Public Health Sciences, University of Miami Miller School of Medicine, 1120 NW 14th St, Miami, FL 33136, USA. E-mail: panyue\@med.miami.edu
+
+**Key words:** HIV, cardiovascular disease, heart age, PREVENT equations, racial disparities, depression, MACS/WIHS Combined Cohort Study
+
+**Word count:** Abstract 247; main text 3,220
+
+**Conflicts of Interest and Source of Funding:** The authors declare no conflicts of interest. Funding sources are listed in the Funding section.
+
+------------------------------------------------------------------------
+
+## Abstract
+
+**Objective.** To determine PREVENT-derived heart age (HA) and heart-age deviation (HAD) and identify correlates of accelerated cardiovascular aging in people with and without HIV.
+
+**Design.** Cross-sectional analysis of the MACS/WIHS Combined Cohort Study (MWCCS), October 2020 to September 2024.
+
+**Methods.** We analyzed 2,729 participants (1,766 with HIV; 963 without). HA and HAD were derived from the American Heart Association PREVENT equations. Multivariable linear and logistic regression assessed demographic predictors of HAD; a separate model in people with HIV evaluated viral load and CD4 count. Multiple imputation addressed missing psychosocial data.
+
+**Results.** Mean age was 54.4 (SD 10.0) years; 62.0% were women and 60.7% were Non-Hispanic Black (NHB). Overall, 32.5% had HAD ≥5 years. Mean HAD was 3.2 years in both groups (p\>0.9). HIV serostatus was not associated with HAD (β=−0.18; 95% CI −0.77 to 0.42; p=0.56). NHB race/ethnicity was the strongest demographic correlate (β=2.0; 95% CI 1.2 to 2.8; p\<0.001; OR for HAD ≥5 years 1.88; 95% CI 1.47 to 2.41). Among people with HIV, detectable viral load (β=1.3; 95% CI 0.41 to 2.1; p=0.004) and higher CD4 count (β=0.23 per 100 cells/μL; 95% CI 0.14 to 0.32; p\<0.001) were associated with higher HAD. Clinically significant depressive symptoms (CES-D ≥16) added 1.5 years of HAD (95% CI 0.39 to 2.6; p=0.009).
+
+**Conclusions.** HIV serostatus alone did not predict HAD, but detectable viremia did. NHB race/ethnicity was the strongest demographic correlate, consistent with structural drivers. Depressive symptoms produced a comparable excess, supporting routine depression screening within cardiovascular risk assessment for people with HIV.
+
+------------------------------------------------------------------------
+
+## Introduction
+
+Cardiovascular disease (CVD) remains the leading cause of death worldwide, with approximately 17.9 million deaths annually [@Tsao2023]. People with HIV carry a disproportionate burden. Effective antiretroviral therapy (ART) has converted HIV into a manageable chronic condition and substantially extended life expectancy [@Deeks2013], yet this longer survival has revealed accelerated CVD risk driven by chronic inflammation, persistent immune activation, ART-associated metabolic effects, and a high prevalence of conventional risk factors [@Shah2018; @Hsue2019; @Feinstein2019; @So-Armah2020].
+
+Communicating absolute CVD risk in percentage terms is often unintuitive for patients [@Bonner2021]. Heart age (HA), originally derived from the Framingham equations [@DAgostino2008], translates a multivariable risk profile into a single age-based metric. Heart age deviation (HAD), the difference between HA and chronological age, quantifies accelerated cardiovascular aging.
+
+In 2023 the American Heart Association introduced the Predicting Risk of cardiovascular disease EVENTs (PREVENT) equations, developed in more than 6.5 million diverse US adults [@Khan2023; @Khan2024]. PREVENT improves on the Pooled Cohort Equations by adding kidney function, body mass index (BMI), and hemoglobin A1c, and by removing race from the prediction equation. External evaluations in people with HIV, however, raise calibration concerns: in CNICS, PREVENT improved discrimination but underpredicted events; in REPRIEVE, PREVENT produced lower estimates than the Pooled Cohort Equations and reclassified many participants downward [@Durstenfeld2025PREVENT; @Grinspoon2025PREVENT].
+
+Despite growing interest in HA for general-population risk communication, its application in people with HIV has been virtually unstudied. People with HIV face compounded risks from immunological, metabolic, and behavioral factors [@Hsue2019; @Feinstein2019; @So-Armah2020], and they experience high rates of depression, post-traumatic stress disorder (PTSD), and substance use, conditions associated with adverse cardiovascular outcomes that are not captured by the PREVENT model [@Remien2019; @Womack2019]. The MACS/WIHS Combined Cohort Study (MWCCS) is the largest and longest-running observational cohort of people with HIV in the United States, with up to 35 years of follow-up [@DSouza2021; @Barkan1998], and so provides a unique setting to characterize PREVENT-derived HA in this population.
+
+We aimed to (1) calculate PREVENT-derived HA and HAD among people with and without HIV in the MWCCS; (2) examine demographic and clinical correlates of HAD; (3) assess the contribution of HIV-specific factors (viral load, CD4 count) among people with HIV; and (4) evaluate associations of mental health indicators with HAD. We hypothesized that HIV serostatus and racial/ethnic disparities would persist after adjustment for conventional risk factors, and that HIV-specific factors and mental health conditions would be independently associated with accelerated cardiovascular aging.
+
+------------------------------------------------------------------------
+
+## Methods
+
+### Ethics
+
+The study was approved by the Institutional Review Boards at each MWCCS clinical research site. All participants provided written informed consent. The study followed the principles of the Declaration of Helsinki.
+
+### Study design and population
+
+We conducted a cross-sectional analysis of the MWCCS, a prospective, multi-site cohort that merged the Multicenter AIDS Cohort Study (MACS, men who have sex with men, enrolled from 1984) and the Women's Interagency HIV Study (WIHS, women with or at risk for HIV, enrolled from 1994) [@DSouza2021; @Barkan1998]. Sites span the South, Mid-Atlantic/Northeast, West Coast, and Midwest.
+
+Data were collected at annual visits between October 1, 2020, and September 30, 2024 (visit windows V101–V104). For participants with multiple visits, the earliest eligible visit served as baseline. Eligibility required: (1) age 30–75 years; (2) complete data for all PREVENT score inputs; and (3) no prior stroke, myocardial infarction, or coronary heart disease, and not currently pregnant. The final analytic sample was 2,729 participants. The cross-sectional design was chosen because PREVENT-derived HA has not been previously characterized in people with HIV; establishing the baseline distribution is a prerequisite for the longitudinal analyses we plan as follow-up work.
+
+### Heart age and heart age deviation
+
+We calculated HA from the AHA PREVENT 10-year total CVD equations [@Khan2024], using sex-specific multivariable models that include age, total and HDL cholesterol, systolic blood pressure, BMI, eGFR (CKD-EPI), diabetes, current smoking, antihypertensive use, and statin use. HA was defined as the chronological age at which an individual with optimal risk-factor values (specified in the Supplemental Material) would have the same PREVENT risk as the participant. HAD was HA minus chronological age. Elevated HAD was defined a priori as ≥5 years, an exploratory threshold intended to mark clinically meaningful accelerated aging; we also report the prevalence of HAD ≥10 years. Neither threshold has been validated against hard CVD endpoints in people with HIV.
+
+### Covariates
+
+Demographic variables included age (continuous and categorical), biological sex, race/ethnicity (Non-Hispanic White [NHW], Non-Hispanic Black [NHB], Hispanic, Other), and US region. Clinical covariates included BMI, systolic blood pressure, total and HDL cholesterol, eGFR, current smoking, diabetes, antihypertensive use, and statin use. Among people with HIV, we examined CD4 count and HIV viral load (undetectable vs. detectable). Mental health measures were the Center for Epidemiologic Studies Depression Scale (CES-D; clinically significant symptoms at score ≥16) [@Radloff1977], the PTSD Checklist Civilian Version (PCL-C) [@Ruggiero2003], and the Perceived Stress Scale (PSS-10) [@Cohen1983]. Social-determinant variables included a neighborhood safety scale [@Mujahid2007] and the 3-item UCLA Loneliness Scale [@Hughes2004].
+
+### Statistical analysis
+
+We summarized continuous variables as mean (SD) and categorical variables as frequency (%), and compared groups using Wilcoxon rank-sum and Pearson chi-square tests. Multivariable linear regression modeled HAD as a continuous outcome, and multivariable logistic regression modeled HAD ≥5 years. Covariates were HIV serostatus, age (per 10 years), sex, race/ethnicity, and region. An interaction model added an HIV × sex term, with estimated marginal means from emmeans [@Lenth2024]. We did not include individual-level socioeconomic indicators (income, education, insurance) as covariates in the primary models because they are strongly collinear with race/ethnicity and region, and their adjustment in a non-mediation framework would constitute over-adjustment for the structural exposures we sought to estimate [@VanderWeele2014]. A sensitivity analysis that adjusted for insurance type (uninsured, public [Medicaid/Medicare/VA], private) is reported in the Supplemental Material.
+
+Among people with HIV, a separate model assessed viral suppression and CD4 count (per 100 cells/μL) as predictors of HAD. Missing data in the analytic sample ranged from 8.8% (loneliness) to 10.9% (depressive symptoms) for CES-D, PSS-10, neighborhood safety, and loneliness; 87.2% had complete data for all four. PCL-C was available for 6.4% of participants (n=176) because it was administered to a subset. We addressed missingness with multiple imputation by chained equations (MICE; m=10), and pooled estimates with Rubin's rules [@vanBuuren2011]. Analyses were performed in R 4.5.3 [@RCoreTeam2024] with tidyverse [@Wickham2019], gtsummary [@Sjoberg2021], emmeans [@Lenth2024], broom [@Robinson2024], and mice [@vanBuuren2011]. Two-sided α=0.05.
+
+### Use of AI tools
+
+The authors used a large-language-model assistant (Anthropic Claude) for language editing and for the preparation of summary tables of model output during drafting. The tool was not used to generate scientific content, statistical results, or interpretations. All analyses were programmed by the authors in R, and all numerical results, citations, and conclusions were verified and are the sole responsibility of the authors.
+
+------------------------------------------------------------------------
+
+## Results
+
+### Study population
+
+The analytic sample included 2,729 participants: 1,766 (64.7%) with HIV and 963 (35.3%) without (Table 1). Mean age was 54.4 (SD 10.0) years; participants with HIV were slightly younger (53.9 vs. 55.3 years; p\<0.001). Women comprised 62.0% of the sample, and 60.7% were NHB. Participants with HIV were more often women (67.2% vs. 52.4%; p\<0.001) and NHB (64.8% vs. 53.2%; p\<0.001). Mean BMI was 31.6 (SD 8.4) kg/m^2^ and 49.3% were obese; mean systolic blood pressure was 128.5 (SD 18.2) mmHg and 24.4% had stage 2 hypertension. Current smoking was reported by 27.5% (higher among people without HIV, 31.2% vs. 25.5%; p=0.002), and diabetes was present in 9.6% (12.4% vs. 8.0%; p\<0.001). People with HIV had lower mean eGFR (84.5 vs. 89.9 mL/min/1.73m^2^; p\<0.001) and lower HDL cholesterol (54.6 vs. 56.0 mg/dL; p=0.011). Among people with HIV, mean CD4 count was 758.9 (SD 416.4) cells/μL, with 74.4% at ≥500 cells/μL.
+
+### Heart age and heart age deviation
+
+Mean HA overall was 57.6 (SD 12.6) years and mean HAD was 3.2 (SD 7.5) years. Mean HA was lower in people with HIV than in those without (57.1 vs. 58.5 years; p\<0.001), but mean HAD was identical (3.2 years in both groups; p\>0.9), reflecting the younger chronological age of the HIV group. Overall, 32.5% had HAD ≥5 years and 15.8% had HAD ≥10 years; neither prevalence differed by serostatus (p=0.9 and p=0.4). Stratified analyses showed the highest HAD in the 50–59 age group (mean ~3.4–4.8 years) and the lowest in those aged 70+ years (mean ~2.4 years), consistent with the upper-age ceiling of the PREVENT equations. HAD was also higher in men, NHB participants, Southern US residents, those with obesity or stage 2 hypertension, current smokers, and those with diabetes (Table 2; Supplemental Tables S1–S3; Supplemental Fig S2). Sex-stratified descriptives by HIV status are in Supplemental Table S6.
+
+### Multivariable predictors of HAD
+
+In multivariable linear regression (Table 3, Panel A), HIV serostatus was not associated with HAD (β=−0.18; 95% CI −0.77 to 0.42; p=0.56). NHB race/ethnicity was the strongest demographic correlate (β=2.0; 95% CI 1.2 to 2.8; p\<0.001), followed by Southern US residence (β=1.7; 95% CI 0.78 to 2.7; p\<0.001). Female sex was associated with lower HAD (β=−1.6; 95% CI −2.2 to −0.93; p\<0.001), and older age with higher HAD (β=0.52 per decade; 95% CI 0.22 to 0.82; p\<0.001).
+
+In logistic regression for HAD ≥5 years (Table 3, Panel B; Fig 1A), NHB race/ethnicity had nearly twice the odds (OR=1.88; 95% CI 1.47 to 2.41; p\<0.001), female sex had lower odds (OR=0.77; 95% CI 0.64 to 0.94; p=0.009), and HIV serostatus was not significant (OR=0.92; 95% CI 0.77 to 1.09; p=0.32). Age per decade was not a significant predictor of HAD ≥5 years (OR=1.05; 95% CI 0.96 to 1.14; p=0.32), which likely reflects that the threshold is driven primarily by cardiometabolic burden rather than chronological age.
+
+### HIV × sex interaction
+
+The HIV × sex interaction was not significant (β=−1.0 for HIV × Female; 95% CI −2.2 to 0.17; p=0.092; Supplemental Table S5). Point estimates suggested a possible sex-differential pattern, but the wide CI precludes a firm conclusion (Supplemental Fig S1).
+
+### HIV-specific predictors among people with HIV
+
+Among people with HIV (Table 4; Fig 1B), detectable viral load was associated with 1.3 additional years of HAD (β=1.3; 95% CI 0.41 to 2.1; p=0.004). Higher CD4 count was associated with modestly higher HAD (β=0.23 per 100 cells/μL; 95% CI 0.14 to 0.32; p\<0.001), a finding that likely reflects cumulative HIV and treatment exposure among long-term survivors rather than a direct harmful effect of immune reconstitution (see Discussion). Female sex remained associated with lower HAD (β=−2.1; 95% CI −3.0 to −1.2; p\<0.001) and NHB race/ethnicity with higher HAD (β=1.6; 95% CI 0.48 to 2.7; p=0.005). The CD4 coefficient corresponds to roughly 1.8 additional years of HAD across an 800 cells/μL range, which is consistent with a proxy variable rather than a major independent driver.
+
+### Mental health and social determinants
+
+In the MICE-based model (Supplemental Table S4), clinically significant depressive symptoms (CES-D ≥16) were associated with 1.5 additional years of HAD (β=1.5; 95% CI 0.39 to 2.6; p=0.009). PTSD (PCL-C threshold) was not associated with HAD (β=0.29; 95% CI −2.4 to 2.9; p=0.81). Higher neighborhood-unsafety scores showed a borderline association (β=0.32; 95% CI 0.00 to 0.63; p=0.051), and loneliness was not significant (β=−0.06; p=0.65). NHB race/ethnicity (β=2.2; p\<0.001) and female sex (β=−1.5; p\<0.001) remained associated with HAD.
+
+------------------------------------------------------------------------
+
+## Discussion
+
+In this large multi-site US cohort of 2,729 people with and without HIV, HIV serostatus alone was not associated with HAD after demographic adjustment, which argues against interpreting HIV infection per se as measurably accelerated cardiovascular aging within the PREVENT framework. Among people with HIV, detectable viral load added 1.3 years of HAD, consistent with the cardiovascular importance of viral suppression. NHB race/ethnicity was the strongest and most consistent demographic correlate across all models, and depressive symptoms were independently associated with accelerated aging.
+
+The clinical interpretation of HAD requires context. Prior work shows that HA-based communication improves patient understanding of CVD risk [@Bonner2021], but the relationship between HAD magnitude and incident CVD has not been well quantified, especially in people with HIV. A mean HAD of 3.2 years in this cohort indicates that, on average, participants' cardiovascular systems are aging faster than chronological age would predict, and the 2-year increment associated with NHB race/ethnicity is a meaningful additional disparity. HAD thresholds (e.g., ≥5 years) have not been validated against hard cardiovascular endpoints in people with HIV; future work should calibrate HAD against incident events. Imaging-based measures of vascular aging, such as coronary artery calcium, carotid intima-media thickness, and pulse wave velocity, capture subclinical atherosclerosis directly and would clarify the construct validity of HA in this population.
+
+PREVENT is a prediction and communication tool, not a tool to identify HIV-specific mechanisms. It was developed in general-population cohorts that likely included very few people with HIV [@Khan2024]. External evaluations in CNICS and REPRIEVE caution that PREVENT may underpredict events and reclassify people with HIV to lower risk categories [@Durstenfeld2025PREVENT; @Grinspoon2025PREVENT]. PREVENT-derived HA reflects only the risk information captured by traditional inputs (blood pressure, cholesterol, glucose, kidney function, BMI, smoking) and so may underestimate cardiovascular aging in people with HIV by omitting HIV-specific pathways, including chronic immune activation, microbial translocation, endothelial dysfunction, and ART-associated metabolic toxicity [@Hsue2019; @Feinstein2019; @So-Armah2020; @Nou2016]. The similar HAD between groups may also reflect the high care engagement of MWCCS participants, which narrows the gap in modifiable risk factor profiles. Within people with HIV, detectable viral load was associated with higher HAD even though it is not a PREVENT input, which suggests that viremia identifies cardiovascular aging not fully captured by standard PREVENT variables.
+
+The positive association between CD4 count and HAD is paradoxical only on the surface; it should not be read as evidence that immune reconstitution causes cardiovascular harm. In a cohort with up to 35 years of follow-up, higher current CD4 likely marks prolonged survival and therefore greater cumulative exposure to chronic immune activation, earlier-generation antiretrovirals with adverse metabolic profiles (protease inhibitors, thymidine-analog NRTIs), and the biological burden of aging with treated HIV [@FrisMoller2003; @Feinstein2016; @Nou2016]. Because the model did not include HIV duration or cumulative ART exposure, the CD4 coefficient likely absorbs residual confounding from these unmeasured variables. Current CD4 in a treated population primarily reflects immune reconstitution on ART; nadir CD4, a stronger marker of cumulative immunologic injury, was not available in the local analytic file and may show an inverse association with HAD [@Feinstein2019]. The modest effect size (0.23 years per 100 cells/μL) and weak bivariate correlation (r=0.08) are consistent with a proxy role.
+
+NHB race/ethnicity was the strongest demographic correlate across all models, with approximately 2 additional years of HAD and nearly twice the odds of HAD ≥5 years versus NHW participants. Race is not a biological risk factor; it is a social construct that indexes the cumulative burden of structural racism, including residential segregation, unequal healthcare access, environmental exposures, food insecurity, chronic psychosocial stress, and economic marginalization [@Tsao2023; @Geronimus2006]. PREVENT intentionally removes race [@Khan2024], yet our findings show that race-neutral risk equations alone do not eliminate racial disparities in cardiovascular aging. The NHB coefficient persisted after adjustment for smoking, BMI, blood pressure, and other conventional risk factors, which points to unmeasured pathways including chronic allostatic load, differential preventive-care access, and neighborhood-level exposures. The higher HAD in Southern US residents (β=1.7) is consistent with place-based structural determinants. A sensitivity analysis that adjusted for insurance type produced no attenuation of the NHB coefficient (β=2.001; Δβ\<0.01), which argues that insurance access alone does not explain the disparity. The NHB coefficient should be read as a marker of race-associated social, economic, and environmental exposures.
+
+The independent association between depressive symptoms (CES-D ≥16) and 1.5 additional years of HAD is consistent with a large body of evidence linking depression to adverse cardiovascular outcomes [@Remien2019; @Womack2019]. Plausible pathways include HPA-axis activation with elevated cortisol, pro-inflammatory cytokine release (IL-6, CRP, TNF-α), endothelial dysfunction, autonomic dysregulation, and behavioral mediators including reduced ART adherence, tobacco and substance use, and physical inactivity. In people with HIV, these pathways compound: depression impairs adherence, and our data showed that detectable viral load was independently associated with higher HAD. The depression-associated HAD (1.5 years) is comparable in magnitude to detectable viral load (1.3 years), which suggests that psychosocial factors may be as relevant as virologic control for cardiovascular aging in this population. The findings support the integration of routine depression screening (CES-D or PHQ-9) into cardiovascular risk assessment, with referral for evidence-based treatment. PTSD was not associated with HAD in the imputation-based model (β=0.29; p=0.81), but this result should not be read as a clean null: PCL-C data were available in only 6.4% of participants, the imputed estimate is sensitive to the missing-at-random assumption, and the neurobiological pathways linking PTSD to CVD overlap substantially with those of depression [@Womack2019; @Vatsa2025PTSD]. PTSD remains a clinically important psychosocial target in people with HIV that warrants evaluation in studies with systematic PCL-C administration.
+
+Female sex was associated with lower HAD across all models (β −1.5 to −2.1), consistent with established sex differences in CVD risk [@Tsao2023]. Recent REPRIEVE data suggest that female sex may not be protective among people with HIV, however, and so model-derived sex differences in HAD should not be assumed to translate directly into lower observed event risk [@Grinspoon2025RiskFactors]. The HIV × sex interaction was not significant (p=0.092); interaction tests typically require larger samples than main-effect analyses, and the mean age of 54.4 years means that many women in this cohort were postmenopausal, which may attenuate sex differences.
+
+### Limitations
+
+Several limitations should be considered. The cross-sectional design precludes causal inference. PREVENT does not incorporate HIV-specific inputs (viral load, CD4, ART, inflammatory biomarkers), which may lead to underestimation of HIV-related cardiovascular risk. The MWCCS is a high-engagement volunteer cohort enriched for long-term survivors, which limits generalizability and may introduce healthy-survivor bias relevant to the CD4–HAD association. Nadir CD4 was unavailable. PCL-C was administered to only 6.4% of participants, so the PTSD estimate is statistically underpowered and depends on the missing-at-random assumption. Our primary models did not adjust for individual-level socioeconomic indicators (income, education, insurance); the insurance sensitivity analysis found no attenuation of the NHB coefficient (Δβ\<0.01), and income and education were unavailable in the local analytic file. ZIP-code-level deprivation measures were not available. Some covariates (race/ethnicity, region) may lie on a shared causal pathway; the simultaneous-adjustment estimates should be interpreted as adjusted associations rather than isolable causal effects.
+
+### Strengths
+
+To our knowledge, this is the first assessment of PREVENT-derived HA in a large, well-characterized cohort of people with and without HIV. The MWCCS provides standardized data collection across multiple US sites with high retention and rigorous quality control. The sample (n=2,729) supports multivariable modeling, and the well-matched group without HIV strengthens internal validity. We combined continuous (linear) and categorical (logistic) modeling strategies, examined HIV-specific predictors in a dedicated model, and addressed missingness in psychosocial measures with MICE.
+
+------------------------------------------------------------------------
+
+## Conclusions
+
+In a large US multi-site cohort, PREVENT-derived HA and HAD did not differ by HIV serostatus, but among people with HIV, detectable viral load was associated with 1.3 additional years of HAD. NHB race/ethnicity was the strongest demographic correlate, consistent with persistent disparities driven by structural rather than biological factors. Depressive symptoms were independently associated with accelerated cardiovascular aging, which supports the integration of mental health services into cardiovascular prevention for people with HIV. Future work should determine whether incorporating HIV-specific parameters into PREVENT-derived HA improves CVD risk prediction in this population and whether HA-based interventions can motivate cardiovascular health behavior change.
+
+------------------------------------------------------------------------
+
+## Conflicts of interest
+
+The authors declare no conflicts of interest.
+
+## Funding
+
+The MACS/WIHS Combined Cohort Study (MWCCS) is funded primarily by the National Heart, Lung, and Blood Institute (NHLBI), with co-funding from NICHD, NIA, NIMH, NIDA, NIAID, NINDS, NIDCR, NIAAA, NCI, NIDCD, and the NIH Office of Research on Women's Health. Y.P. is supported by the University of Miami Sylvester Comprehensive Cancer Center/NHLBI. The content is solely the responsibility of the authors and does not necessarily represent the official views of the National Institutes of Health.
+
+## Acknowledgments
+
+Data in this manuscript were collected by the MACS/WIHS Combined Cohort Study (MWCCS). MWCCS Principal Investigators: Atlanta CRS (Ighovwerha Ofotokun, Anandi Sheth, Gina Wingood), U01-HL146241; Baltimore CRS (Todd Brown, Joseph Margolick), U01-HL146201; Bronx CRS (Kathryn Anastos, Anjali Sharma), U01-HL146204; Brooklyn CRS (Deborah Gustafson, Tracey Wilson), U01-HL146202; Data Analysis and Coordination Center (Gypsyamber D'Souza, Stephen Gange, Elizabeth Golub), U01-HL146193; Chicago-Cook County CRS (Mardge Cohen, Audrey French), U01-HL146245; Chicago-Northwestern CRS (Steven Wolinsky), U01-HL146240; Northern California CRS (Bradley Aouizerat, Jennifer Price), U01-HL146242; Los Angeles CRS (Roger Detels), U01-HL146333; Miami CRS (Maria Alcaide, Margaret Fischl, Deborah Jones), U01-HL146205; Pittsburgh CRS (Jeremy Martinson, Charles Rinaldo), U01-HL146208; University of Alabama at Birmingham-9th Avenue CRS (Michael Saag, Greer Burkholder), U01-HL146255; University of North Carolina CRS (Adaora Adimora), U01-HL146218; Washington DC CRS (Mary Young), U01-HL146197.
+
+------------------------------------------------------------------------
+
+## References
+
+::: {#refs}
+:::
+
+------------------------------------------------------------------------
+
+## Tables
+
+**Table 1.** Descriptive characteristics of 2,729 participants by HIV serostatus in the MWCCS, 2020–2024.
+
+**Table 2.** Prevalence of elevated heart age deviation (HAD ≥5 years) and heart age exceeding chronological age, by HIV serostatus and clinical subgroups. Values are n/N (%). Chi-square p-values comparing PLWoH vs PLWH shown as significance stars (\*p\<0.05; \*\*p\<0.01; \*\*\*p\<0.001).
+
+**Table 3.** Multivariable regression predicting heart age deviation. Panel A: linear regression (β coefficients, continuous HAD in years). Panel B: logistic regression (odds ratios, elevated HAD ≥5 years). Reference categories: HIV-negative, male, Non-Hispanic White, West US region; age per 10-year increment. (\*p\<0.05; \*\*p\<0.01; \*\*\*p\<0.001.)
+
+**Table 4.** HIV severity model (people with HIV only): viral load and CD4 count predicting heart age deviation.
+
+------------------------------------------------------------------------
+
+## Figures
+
+**Fig. 1.** Forest plots of predictors of heart age deviation. Panel A: predictors of elevated HAD (≥5 years) from multivariable logistic regression (odds ratios and 95% CIs; reference categories: HIV-negative, male, Non-Hispanic White, West; age per 10-year increment). Panel B: HIV-specific predictors of HAD among people with HIV from multivariable linear regression (β coefficients and 95% CIs; reference categories: undetectable viral load, male, Non-Hispanic White; CD4 count per 100 cells/μL; age per 10 years).
+
+------------------------------------------------------------------------
+
+## Supplemental Material
+
+**Supplemental Table S1.** PREVENT 10-year cardiovascular risk (mean [SD]) by HIV serostatus and clinical subgroups.
+
+**Supplemental Table S2.** Heart age deviation (years; mean [SD]) by HIV serostatus and clinical subgroups.
+
+**Supplemental Table S3.** Heart age (years; mean [SD]) by HIV serostatus and clinical subgroups.
+
+**Supplemental Table S4.** Multiple-imputation model: mental health and social determinants predicting heart age deviation.
+
+**Supplemental Table S5.** Interaction model: HIV serostatus × sex predicting heart age deviation.
+
+**Supplemental Table S6.** Sex-stratified descriptive characteristics and heart age deviation by HIV serostatus.
+
+**Supplemental Fig. S1.** Predicted heart age deviation by sex and HIV serostatus from the interaction model (estimated marginal means with 95% CIs).
+
+**Supplemental Fig. S2.** Heatmap of prevalence of HAD ≥5 years by HIV serostatus across demographic and clinical subgroups.
+
+**Supplemental Methods.** PREVENT optimal-risk-factor values used to anchor HA: systolic blood pressure 120 mmHg, non-HDL cholesterol 3.5 mmol/L, HDL cholesterol 1.5 mmol/L, BMI 22.5 kg/m^2^, eGFR 90 mL/min/1.73m^2^, no diabetes, no smoking, no antihypertensive or lipid-lowering medication.

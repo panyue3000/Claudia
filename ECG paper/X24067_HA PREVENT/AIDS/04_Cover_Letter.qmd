@@ -1,0 +1,43 @@
+---
+title: "Cover Letter"
+format:
+  docx:
+    toc: false
+    number-sections: false
+---
+
+May 11, 2026
+
+The Editor-in-Chief\
+*AIDS*\
+Wolters Kluwer Health
+
+Dear Editor,
+
+We are pleased to submit our original research manuscript entitled **"Heart Age and Heart-Age Deviation Among People With and Without HIV in the United States"** for consideration in *AIDS* as an Original Paper (Epidemiology and Social section).
+
+Cardiovascular disease is the leading cause of death worldwide, and people with HIV carry a disproportionate burden. In 2023 the American Heart Association introduced the PREVENT equations as a next-generation cardiovascular risk tool that incorporates kidney and metabolic factors and removes race as a predictor. PREVENT-derived heart age (HA) translates a complex risk-factor profile into a single, intuitive age-based metric, but it has not been characterized in HIV cohorts. In a cross-sectional analysis of 2,729 participants in the MACS/WIHS Combined Cohort Study (MWCCS) enrolled between October 2020 and September 2024, we calculated PREVENT-derived HA and heart age deviation (HAD) and examined demographic, HIV-specific, mental health, and social-determinant correlates of accelerated cardiovascular aging.
+
+Our findings should be of interest to *AIDS* readers for four reasons. First, to our knowledge this is the first comprehensive assessment of PREVENT-derived HA in a large HIV cohort. Second, HIV serostatus alone was not associated with HAD after demographic adjustment, but among people with HIV, detectable viral load was associated with 1.3 additional years of HAD, which reinforces the cardiovascular importance of viral suppression and suggests that viremia carries cardiovascular aging information not captured by the standard PREVENT inputs. Third, Non-Hispanic Black race/ethnicity was the strongest demographic correlate (β=2.0 years; OR for HAD ≥5 years 1.88), consistent with persistent disparities driven by structural rather than biological factors, and the disparity was not attenuated by adjustment for insurance type. Fourth, clinically significant depressive symptoms were associated with 1.5 additional years of HAD, a magnitude comparable to detectable viremia, which supports the integration of routine depression screening into cardiovascular risk assessment for people with HIV.
+
+The work aligns directly with the scope of *AIDS*: it combines HIV epidemiology, social determinants of health, and clinical translation, and it speaks to a contemporary methodological question (how to apply, and where to refine, a race-neutral general-population risk tool for people with HIV).
+
+We confirm that this manuscript is original, has not been published elsewhere, and is not under consideration by any other journal. All authors have read and approved the manuscript and agree to its submission. The study was approved by the Institutional Review Boards at each MWCCS clinical research site, and all participants provided written informed consent. The authors declare no conflicts of interest. Funding sources are listed in the manuscript. Data and code are available on reasonable request to the corresponding author, subject to MWCCS data-sharing policies.
+
+Suggested reviewers (please remove or replace as appropriate before submission):
+
+1. *Reviewer 1: name, affiliation, e-mail.*
+2. *Reviewer 2: name, affiliation, e-mail.*
+3. *Reviewer 3: name, affiliation, e-mail.*
+
+Thank you for considering our work. We look forward to your response.
+
+Sincerely,
+
+Yue Pan, PhD\
+Department of Public Health Sciences\
+Division of Biostatistics and Bioinformatics\
+University of Miami Miller School of Medicine\
+1120 NW 14th Street, Miami, FL 33136, USA\
+E-mail: panyue\@med.miami.edu\
+On behalf of all co-authors
