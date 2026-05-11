@@ -365,8 +365,9 @@ tbl_aim1_linear <- tbl_regression(
     REGION_factor ~ "Region"
   )
 ) %>%
-  bold_p() %>%
-  add_global_p()
+  bold_p()
+# Note: add_global_p() removed — it moves p-values from level rows to variable
+# label rows, which breaks add_significance_stars on level rows (NHB, Female, etc.)
 
 tbl_aim1_logistic <- tbl_regression(
   glm_aim1,
@@ -379,22 +380,42 @@ tbl_aim1_logistic <- tbl_regression(
     REGION_factor ~ "Region"
   )
 ) %>%
-  bold_p() %>%
-  add_global_p()
+  bold_p()
 
 # ---- Replace p-value columns with significance stars ----
 tbl_linear_stars <- tbl_aim1_linear %>%
-  add_significance_stars(hide_p = TRUE, hide_ci = FALSE, hide_se = TRUE)
+  add_significance_stars(
+    hide_p   = TRUE,
+    hide_ci  = FALSE,
+    hide_se  = TRUE
+  ) %>%
+  # Merge stars-augmented estimate with formatted CI string; pattern must include {stars}
+  modify_column_merge(
+    pattern = "{estimate}{stars} ({ci})",
+    rows    = !is.na(ci)
+  ) %>%
+  modify_column_hide(columns = any_of(c("conf.low", "conf.high", "std.error", "ci"))) %>%
+  modify_header(estimate ~ "**β (95% CI)**")
 
 tbl_logistic_stars <- tbl_aim1_logistic %>%
-  add_significance_stars(hide_p = TRUE, hide_ci = FALSE, hide_se = TRUE)
+  add_significance_stars(
+    hide_p   = TRUE,
+    hide_ci  = FALSE,
+    hide_se  = TRUE
+  ) %>%
+  modify_column_merge(
+    pattern = "{estimate}{stars} ({ci})",
+    rows    = !is.na(ci)
+  ) %>%
+  modify_column_hide(columns = any_of(c("conf.low", "conf.high", "std.error", "ci"))) %>%
+  modify_header(estimate ~ "**OR (95% CI)**")
 
 # ---- Merge side-by-side as Table 3 ----
 tbl_T3 <- tbl_merge(
   tbls = list(tbl_linear_stars, tbl_logistic_stars),
   tab_spanner = c(
-    "**Panel A: β (95% CI)**",
-    "**Panel B: OR (95% CI)**"
+    "**Panel A: Linear regression (continuous HAD)**",
+    "**Panel B: Logistic regression (HAD ≥5 years)**"
   )
 ) %>%
   modify_caption(
@@ -573,69 +594,102 @@ create_strat_prevalence <- function(data, outcome_var, caption) {
 #### Table 2: Prevalence Tables (Combined S4+S5, Promoted from Supplement)
 
 ```{r table2_prevalence_merged}
-# Depends on strat_setup (row_vars, var_labels_map, n_plwoh, n_plwh) — defined above.
-# Fix: merge at per-level (tbl_summary) stage BEFORE stacking to avoid
-# tbl_merge-on-tbl_stack row-alignment failure.
+# Build Table 2 manually using gt::gt() with a computed tibble.
+# This avoids the gtsummary tbl_merge / tbl_stack row-alignment quirks
+# (extra label rows, wrong subgroup-level N counts).
+# Depends on row_vars, var_labels_map, n_plwoh, n_plwh from strat_setup.
 
-create_strat_prevalence_dual <- function(data, outcome_vars, outcome_labels, caption_text) {
+library(gt)
+library(tidyr)
 
-  tbl_list <- list()
-
-  for (var in row_vars) {
-    lvls <- if (is.factor(data[[var]])) levels(data[[var]]) else sort(unique(na.omit(data[[var]])))
-
-    rows_list <- lapply(lvls, function(lvl) {
-      subset_data <- data %>% filter(.data[[var]] == lvl)
-      if (nrow(subset_data) == 0) return(NULL)
-
-      # One tbl_summary per outcome for this subgroup level
-      sub_tbls <- lapply(seq_along(outcome_vars), function(i) {
-        subset_data %>%
-          select(hiv_status, all_of(outcome_vars[i])) %>%
-          tbl_summary(
-            by = hiv_status,
-            statistic = all_categorical() ~ "{n}/{N} ({p}%)",
-            digits = all_categorical() ~ 1,
-            label = list(all_of(outcome_vars[i]) ~ lvl),
-            missing = "no",
-            value = list(all_of(outcome_vars[i]) ~ "Yes")
-          ) %>%
-          add_p() %>%
-          add_significance_stars(hide_p = TRUE, hide_ci = TRUE) %>%
-          modify_header(label = "**Characteristic**")
-      })
-
-      tbl_merge(sub_tbls, tab_spanner = outcome_labels)
-    })
-
-    rows_list <- rows_list[!sapply(rows_list, is.null)]
-    if (length(rows_list) > 0) tbl_list[[var]] <- tbl_stack(rows_list)
+# Helper: compute one prevalence cell + chi-square significance star
+prev_cell <- function(subset_data, outcome_var) {
+  d <- subset_data %>% filter(!is.na(.data[[outcome_var]]), !is.na(hiv_status))
+  if (nrow(d) == 0) {
+    return(list(plwoh_str = "—", plwh_str = "—", p = NA_real_, stars = ""))
   }
+  d_plwoh <- d %>% filter(hiv_status == "PLWoH")
+  d_plwh  <- d %>% filter(hiv_status == "PLWH")
+  n_plwoh_yes <- sum(d_plwoh[[outcome_var]] == "Yes", na.rm = TRUE)
+  N_plwoh     <- nrow(d_plwoh)
+  n_plwh_yes  <- sum(d_plwh[[outcome_var]]  == "Yes", na.rm = TRUE)
+  N_plwh      <- nrow(d_plwh)
 
-  header_plwoh <- paste0("**PLWoH**\nN = ", format(n_plwoh, big.mark = ","))
-  header_plwh  <- paste0("**PLWH**\nN = ", format(n_plwh, big.mark = ","))
+  pct_plwoh <- if (N_plwoh > 0) 100 * n_plwoh_yes / N_plwoh else NA_real_
+  pct_plwh  <- if (N_plwh  > 0) 100 * n_plwh_yes  / N_plwh  else NA_real_
 
-  tbl_stack(tbl_list, group_header = var_labels_map[row_vars]) %>%
-    modify_caption(caption_text) %>%
-    bold_labels() %>%
-    modify_header(
-      stat_1_1 ~ header_plwoh,
-      stat_2_1 ~ header_plwh,
-      stat_1_2 ~ header_plwoh,
-      stat_2_2 ~ header_plwh
-    ) %>%
-    modify_footnote(
-      update = everything() ~
-        "PLWoH = people without HIV; PLWH = people with HIV. Values are n/N (%). p-values from chi-square test comparing PLWoH vs PLWH within each subgroup. *p<0.05; **p<0.01; ***p<0.001."
-    )
+  # Chi-square test (suppress warnings for small expected counts)
+  p <- tryCatch({
+    suppressWarnings(chisq.test(table(d$hiv_status, d[[outcome_var]]))$p.value)
+  }, error = function(e) NA_real_)
+
+  stars <- dplyr::case_when(
+    is.na(p)    ~ "",
+    p < 0.001   ~ "***",
+    p < 0.01    ~ "**",
+    p < 0.05    ~ "*",
+    TRUE        ~ ""
+  )
+
+  list(
+    plwoh_str = sprintf("%d/%d (%.1f%%)", n_plwoh_yes, N_plwoh, pct_plwoh),
+    plwh_str  = sprintf("%d/%d (%.1f%%)%s", n_plwh_yes,  N_plwh,  pct_plwh, stars),
+    p         = p,
+    stars     = stars
+  )
 }
 
-tbl_T2 <- create_strat_prevalence_dual(
-  data          = analysis_clean,
-  outcome_vars  = c("had5", "ha_gt_age"),
-  outcome_labels = c("**HAD ≥5 years**", "**Heart age > chronological age**"),
-  caption_text  = "**Table 2. Prevalence of elevated heart age deviation (HAD ≥5 years) and heart age exceeding chronological age, by HIV serostatus and clinical subgroups. Values are n/N (%).**"
-)
+# Build the long-form data with one row per (var, lvl)
+t2_rows <- purrr::map_dfr(row_vars, function(var) {
+  lvls <- if (is.factor(analysis_clean[[var]])) {
+    levels(analysis_clean[[var]])
+  } else {
+    sort(unique(na.omit(analysis_clean[[var]])))
+  }
+
+  purrr::map_dfr(lvls, function(lvl) {
+    subset_data <- analysis_clean %>% filter(.data[[var]] == lvl)
+    if (nrow(subset_data) == 0) return(NULL)
+
+    r_had5  <- prev_cell(subset_data, "had5")
+    r_hagt  <- prev_cell(subset_data, "ha_gt_age")
+
+    tibble::tibble(
+      var_group    = unname(var_labels_map[var]),
+      Characteristic = as.character(lvl),
+      plwoh_had5   = r_had5$plwoh_str,
+      plwh_had5    = r_had5$plwh_str,
+      plwoh_hagt   = r_hagt$plwoh_str,
+      plwh_hagt    = r_hagt$plwh_str
+    )
+  })
+})
+
+# Build the gt table with grouped rows and tab_spanner for outcomes
+header_plwoh_md <- paste0("PLWoH<br>N = ", format(n_plwoh, big.mark = ","))
+header_plwh_md  <- paste0("PLWH<br>N = ",  format(n_plwh,  big.mark = ","))
+
+tbl_T2 <- t2_rows %>%
+  gt(groupname_col = "var_group", rowname_col = "Characteristic") %>%
+  tab_header(
+    title = md("**Table 2. Prevalence of elevated heart age deviation (HAD ≥5 years) and heart age exceeding chronological age, by HIV serostatus and clinical subgroups.**")
+  ) %>%
+  cols_label(
+    plwoh_had5 = md(header_plwoh_md),
+    plwh_had5  = md(header_plwh_md),
+    plwoh_hagt = md(header_plwoh_md),
+    plwh_hagt  = md(header_plwh_md)
+  ) %>%
+  tab_spanner(label = md("**HAD ≥5 years**"),                       columns = c(plwoh_had5, plwh_had5)) %>%
+  tab_spanner(label = md("**Heart age > chronological age**"),      columns = c(plwoh_hagt, plwh_hagt)) %>%
+  tab_stubhead(label = md("**Characteristic**")) %>%
+  tab_options(
+    row_group.font.weight = "bold",
+    table.font.size       = px(13)
+  ) %>%
+  tab_footnote(
+    footnote = md("Values are n/N (%). p-values from chi-square test comparing PLWoH vs PLWH within each subgroup. *p<0.05; **p<0.01; ***p<0.001. PLWoH = people without HIV; PLWH = people with HIV.")
+  )
 
 tbl_T2
 ```
@@ -818,22 +872,26 @@ fig1b_obj
 # ggsave(filename = file.path(figures_dir, "Fig2_HIV_Severity_ForestPlot.png"),
 #        plot = fig1b_obj, width = 8, height = 6, dpi = 300, bg = "white")
 
-# ---- Combined Figure 1 (Panels A + B via patchwork) ----
-fig1_combined <- fig1a_obj + fig1b_obj +
-  plot_layout(ncol = 2, widths = c(1, 1))
+# ---- Combined Figure 1 (Panels A + B stacked vertically via patchwork) ----
+# Vertical stacking gives each panel full width — avoids label crowding.
+# Tighten title/subtitle spacing and font sizes so they don't overlap.
 
-ggsave(
-  filename = file.path(figures_dir, "Fig1_Combined.png"),
-  plot = fig1_combined,
-  width = 16,
-  height = 7,
-  dpi = 300,
-  bg = "white"
-)
-message("Combined Fig 1 (Panels A+B) saved to: ", file.path(figures_dir, "Fig1_Combined.png"))
+fig1a_tight <- fig1a_obj +
+  theme(
+    plot.title    = element_text(face = "bold", size = 12, margin = margin(b = 4)),
+    plot.subtitle = element_text(size = 9, margin = margin(b = 8)),
+    axis.text.y   = element_text(size = 10)
+  )
 
-# ---- Print combined figure inline ----
-fig1_combined +
+fig1b_tight <- fig1b_obj +
+  theme(
+    plot.title    = element_text(face = "bold", size = 12, margin = margin(b = 4)),
+    plot.subtitle = element_text(size = 9, margin = margin(b = 8)),
+    axis.text.y   = element_text(size = 10, face = "bold")
+  )
+
+fig1_combined <- fig1a_tight / fig1b_tight +
+  plot_layout(heights = c(1, 1)) +
   plot_annotation(
     caption = paste0(
       "Fig. 1. Forest plots of predictors of heart age deviation. ",
@@ -844,8 +902,21 @@ fig1_combined +
       "(β coefficients and 95% CIs; reference categories: undetectable viral load, male, ",
       "Non-Hispanic White; CD4 count per 100 cells/μL; age per 10 years)."
     ),
-    theme = theme(plot.caption = element_text(size = 8, hjust = 0, margin = margin(t = 8)))
+    theme = theme(plot.caption = element_text(size = 8, hjust = 0, margin = margin(t = 10)))
   )
+
+ggsave(
+  filename = file.path(figures_dir, "Fig1_Combined.png"),
+  plot = fig1_combined,
+  width = 10,
+  height = 12,
+  dpi = 300,
+  bg = "white"
+)
+message("Combined Fig 1 (Panels A+B, vertical) saved to: ", file.path(figures_dir, "Fig1_Combined.png"))
+
+# ---- Print combined figure inline ----
+fig1_combined
 ```
 
 ------------------------------------------------------------------------
