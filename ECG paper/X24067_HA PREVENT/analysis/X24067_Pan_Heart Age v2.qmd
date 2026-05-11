@@ -423,7 +423,7 @@ tbl_T3 <- tbl_merge(
   ) %>%
   modify_footnote(
     update = everything() ~
-      "Reference categories: HIV-negative, male, Non-Hispanic White, West US region. Age modeled per 10-year increment. OR = Odds Ratio. *p<0.05; **p<0.01; ***p<0.001."
+      "Reference categories: HIV-negative, male, Non-Hispanic White, West US region. Age modeled per 10-year increment. OR = Odds Ratio. \\*p<0.05; \\*\\*p<0.01; \\*\\*\\*p<0.001."
   )
 
 tbl_T3
@@ -688,7 +688,7 @@ tbl_T2 <- t2_rows %>%
     table.font.size       = px(13)
   ) %>%
   tab_footnote(
-    footnote = md("Values are n/N (%). p-values from chi-square test comparing PLWoH vs PLWH within each subgroup. *p<0.05; **p<0.01; ***p<0.001. PLWoH = people without HIV; PLWH = people with HIV.")
+    footnote = md("Values are n/N (%). p-values from chi-square test comparing PLWoH vs PLWH within each subgroup. \\*p<0.05; \\*\\*p<0.01; \\*\\*\\*p<0.001. PLWoH = people without HIV; PLWH = people with HIV.")
   )
 
 tbl_T2
