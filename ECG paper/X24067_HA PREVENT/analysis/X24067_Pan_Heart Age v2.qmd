@@ -1079,7 +1079,11 @@ create_heatmap_plot <- function(plot_data, title, fill_color = "#08306b") {
     geom_tile(color = "white", linewidth = 0.5) +
     geom_text(aes(label = label_text), color = "black", size = 3) +
     scale_fill_gradient(low = "#f7fbff", high = fill_color,
-                        labels = scales::percent, name = "Prevalence") +
+                        breaks = seq(0.3, 1.0, by = 0.2),
+                        labels = scales::percent_format(accuracy = 1),
+                        name = "Prevalence",
+                        guide = guide_colorbar(barwidth = 8, barheight = 0.5,
+                                               title.position = "top", title.hjust = 0.5)) +
     facet_grid(Category ~ ., scales = "free_y", space = "free_y", switch = "y") +
     labs(title = title, x = NULL, y = NULL) +
     theme_minimal(base_size = 12) +
@@ -1148,19 +1152,21 @@ p1 <- ggplot(plwh_diag, aes(x = CD4N, y = heart_age_deviation)) +
   geom_point(alpha = 0.5, color = "grey40") +
   geom_smooth(method = "lm", color = "red", fill = "#ffcccc") +
   geom_smooth(method = "loess", color = "blue", se = FALSE, linetype = "dashed") +
-  labs(title = "Supplemental Fig S3: CD4 Count vs. Heart Age Deviation",
+  labs(title = "Fig S3: CD4 Count vs. Heart Age Deviation",
        subtitle = "Red = Linear Fit, Blue = Loess (Flexible)",
        x = "CD4 Count (cells/mm3)", y = "HAD (Years)") +
-  theme_minimal()
+  theme_minimal() +
+  theme(plot.title = element_text(size = 11))
 
 # Supplemental Figure S4: HAD Distribution by CD4 Category (Boxplots)
 p2 <- ggplot(plwh_diag, aes(x = cd4_cat, y = heart_age_deviation, fill = cd4_cat)) +
   geom_boxplot() +
   stat_summary(fun = mean, geom = "point", shape = 23, size = 3, fill = "white") +
-  labs(title = "Supplemental Fig S4: HAD Distribution by CD4 Category",
+  labs(title = "Fig S4: HAD Distribution by CD4 Category",
        x = NULL, y = "Heart Age Deviation") +
   theme_minimal() +
-  theme(legend.position = "none", axis.text.x = element_text(angle = 15, hjust = 1))
+  theme(legend.position = "none", axis.text.x = element_text(angle = 15, hjust = 1),
+        plot.title = element_text(size = 11))
 
 # Supplemental Figure S5: Age vs. CD4 (Survival bias check)
 p3 <- ggplot(plwh_diag, aes(x = AGEATVIS, y = CD4N)) +
