@@ -1,0 +1,359 @@
+---
+title: "X24067 HA PREVENT — Sensitivity Analysis: Insurance Adjustment"
+author: "Yue Pan"
+date: "`r Sys.Date()`"
+format:
+  html:
+    self-contained: true
+    toc: true
+    toc-title: "Outline"
+    toc-depth: 3
+    toc-location: body
+    number-sections: true
+    code-fold: true
+    code-summary: "Show code"
+    code-tools: true
+    code-copy: true
+    page-layout: full
+    smooth-scroll: true
+knitr:
+  opts_chunk:
+    collapse: true
+    echo: true
+    message: false
+    warning: false
+    error: true
+    comment: ""
+editor: visual
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+
+library(here)
+library(conflicted)
+library(dplyr)
+library(forcats)
+library(ggplot2)
+library(scales)
+library(patchwork)
+library(gtsummary)
+library(gt)
+library(labelled)
+library(haven)
+library(broom)
+library(knitr)
+library(kableExtra)
+
+conflict_prefer("filter", "dplyr", quiet = TRUE)
+conflict_prefer("select", "dplyr", quiet = TRUE)
+conflict_prefer("recode", "dplyr", quiet = TRUE)
+
+options(scipen = 999)
+```
+
+# Overview
+
+This sensitivity analysis re-runs the three primary regression models from Pan et al. (submitted to *AIDS*) with a 3-category insurance covariate added. The purpose is to assess how much the Non-Hispanic Black (NHB) race/ethnicity coefficient attenuates when insurance type is adjusted for, directly addressing the over-adjustment concern raised in the manuscript Limitations.
+
+Insurance is **not** added to the main analysis models. See `README.md` for full rationale.
+
+------------------------------------------------------------------------
+
+# Data Loading and Preparation
+
+```{r load-data}
+# ---- Locate dataset (same cross-platform logic as main analysis) ----
+candidate_paths <- c(
+  "C:/Users/panyue/Box/Yue Pan from old laptop 2015/DR FEASTER/Other Professors/111 CCS/X24067_Pan_Heart Age/SAS Output/prevent_risk.sas7bdat",
+  file.path(dirname(normalizePath(if (nzchar(knitr::current_input()))
+                                    knitr::current_input() else ".")),
+            "..", "data", "prevent_risk.sas7bdat"),
+  file.path("..", "data", "prevent_risk.sas7bdat"),
+  file.path("data", "prevent_risk.sas7bdat")
+)
+
+input_path <- Filter(file.exists, candidate_paths)[1]
+
+if (is.null(input_path) || is.na(input_path)) {
+  stop(paste0(
+    "prevent_risk.sas7bdat not found. Copy it to:\n",
+    "  X24067_HA PREVENT/data/prevent_risk.sas7bdat\n",
+    "Paths tried:\n",
+    paste(" -", candidate_paths, collapse = "\n")
+  ))
+}
+
+message("Reading data from: ", input_path)
+prevent_risk <- read_sas(input_path)
+```
+
+```{r derive-variables}
+# ---- Replicate main analysis inclusion/exclusion and variable coding ----
+analysis_clean <- prevent_risk |>
+  arrange(CCSID, VISIT) |>
+  group_by(CCSID) |>
+  slice(1) |>
+  ungroup() |>
+  mutate(
+    hiv_status = case_when(
+      STATUS == 1          ~ "PLWoH",
+      STATUS %in% c(2,4,5) ~ "PLWH",
+      TRUE                 ~ NA_character_
+    ),
+    hiv_status = factor(hiv_status, levels = c("PLWoH", "PLWH")),
+
+    race_eth_4cat = case_when(
+      HISP == 1              ~ "Hispanic",
+      HISP == 0 & RACE == 5  ~ "Non-Hispanic White",
+      HISP == 0 & RACE == 4  ~ "Non-Hispanic Black",
+      TRUE                   ~ "Other"
+    ),
+    race_eth_4cat = factor(race_eth_4cat,
+                           levels = c("Non-Hispanic White",
+                                      "Non-Hispanic Black",
+                                      "Hispanic",
+                                      "Other")),
+
+    REGION_factor = factor(REGION,
+                           levels = c(0, 1, 2, 3, 4),
+                           labels = c("West (CA)",
+                                      "Northeast (NY)",
+                                      "Mid-Atlantic (DC, MD)",
+                                      "South (AL, FL, GA, MS, NC)",
+                                      "Midwest (IL, OH, PA)")),
+
+    SEX = factor(SEX, levels = c("Female", "Male")),
+
+    had5 = factor(ifelse(heart_age_deviation >= 5, "Yes", "No"),
+                  levels = c("No", "Yes")),
+
+    # Modeling rescaling
+    age_decade = AGEATVIS / 10,
+    hiv_status = fct_relevel(hiv_status, "PLWoH"),
+    SEX = fct_relevel(SEX, "Male"),
+    race_eth_4cat = fct_relevel(race_eth_4cat, "Non-Hispanic White"),
+    had5 = fct_relevel(had5, "No"),
+
+    # HIV-specific
+    viral_suppression = case_when(
+      UD_VL == 1         ~ "Undetectable",
+      UD_VL %in% c(2, 3) ~ "Detectable",
+      TRUE               ~ NA_character_
+    ),
+    viral_suppression = factor(viral_suppression,
+                               levels = c("Undetectable", "Detectable")),
+    cd4_100 = CD4N / 100
+
+  ) |>
+  filter(!is.na(hiv_status), !is.na(BMI), !is.na(CHOL), !is.na(SYSTOLIC))
+```
+
+```{r insurance-variable}
+# ---- Check raw insurance variable values before recoding ----
+cat("PRIVATE value counts:\n"); print(table(analysis_clean$PRIVATE, useNA = "always"))
+cat("\nMCAID value counts:\n");  print(table(analysis_clean$MCAID,   useNA = "always"))
+cat("\nMCARE value counts:\n");  print(table(analysis_clean$MCARE,   useNA = "always"))
+cat("\nVAOTHER value counts:\n");print(table(analysis_clean$VAOTHER, useNA = "always"))
+
+# ---- Construct 3-category insurance variable ----
+# Priority: Private > Public > Uninsured
+# This reflects differential quality of access, not just presence/absence
+modeling_data <- analysis_clean |>
+  mutate(
+    ins_3cat = case_when(
+      PRIVATE == 1                                 ~ "Private",
+      MCAID == 1 | MCARE == 1 | VAOTHER == 1       ~ "Public",
+      TRUE                                         ~ "Uninsured"
+    ),
+    ins_3cat = fct_relevel(ins_3cat, "Uninsured")
+  )
+
+var_label(modeling_data$ins_3cat) <- "Insurance Type"
+
+cat("\nins_3cat distribution:\n")
+print(table(modeling_data$ins_3cat, useNA = "always"))
+cat("\nAnalytic N:", nrow(modeling_data), "(should be 2,729)\n")
+```
+
+------------------------------------------------------------------------
+
+# Descriptive: Insurance by Race/Ethnicity and HIV Status
+
+This table confirms that insurance is strongly patterned by NHB race/ethnicity — the key justification for treating it as a sensitivity covariate rather than an independent confounder.
+
+```{r desc-insurance}
+modeling_data |>
+  select(ins_3cat, race_eth_4cat, hiv_status) |>
+  tbl_summary(
+    by = ins_3cat,
+    statistic = list(all_categorical() ~ "{n} ({p}%)"),
+    digits = list(all_categorical() ~ 1)
+  ) |>
+  add_overall() |>
+  bold_labels() |>
+  modify_caption("**Insurance type distribution by race/ethnicity and HIV serostatus (N=2,729)**")
+```
+
+```{r desc-insurance-by-race}
+modeling_data |>
+  select(ins_3cat, race_eth_4cat) |>
+  tbl_summary(
+    by = race_eth_4cat,
+    statistic = list(all_categorical() ~ "{n} ({p}%)"),
+    digits = list(all_categorical() ~ 1)
+  ) |>
+  bold_labels() |>
+  modify_caption("**Insurance type by race/ethnicity — confirms insurance is patterned by NHB race**")
+```
+
+------------------------------------------------------------------------
+
+# Sensitivity Models
+
+## SA-1: Linear Regression — Continuous HAD (parallel to Table 2)
+
+```{r sa1-linear}
+sa1_lm <- lm(
+  heart_age_deviation ~ hiv_status + age_decade + SEX + race_eth_4cat +
+    REGION_factor + ins_3cat,
+  data = modeling_data
+)
+
+tbl_sa1 <- tbl_regression(
+  sa1_lm,
+  estimate_fun = ~ style_sigfig(.x, digits = 2),
+  label = list(
+    hiv_status    ~ "HIV Serostatus",
+    age_decade    ~ "Age (per 10 years)",
+    SEX           ~ "Sex",
+    race_eth_4cat ~ "Race/Ethnicity",
+    REGION_factor ~ "Region",
+    ins_3cat      ~ "Insurance Type"
+  )
+) |>
+  bold_p() |>
+  add_global_p() |>
+  modify_caption("**SA-1. Sensitivity analysis: linear regression predicting HAD with insurance adjustment.**")
+
+tbl_sa1
+
+# Export tidy results
+sa1_tidy <- broom::tidy(sa1_lm, conf.int = TRUE)
+write.csv(sa1_tidy, "tables/sa1_linear_insurance.csv", row.names = FALSE)
+```
+
+## SA-2: Logistic Regression — HAD ≥5 Years (parallel to Table 3)
+
+```{r sa2-logistic}
+sa2_glm <- glm(
+  had5 ~ hiv_status + age_decade + SEX + race_eth_4cat +
+    REGION_factor + ins_3cat,
+  data = modeling_data,
+  family = binomial
+)
+
+tbl_sa2 <- tbl_regression(
+  sa2_glm,
+  exponentiate = TRUE,
+  label = list(
+    hiv_status    ~ "HIV Serostatus",
+    age_decade    ~ "Age (per 10 years)",
+    SEX           ~ "Sex",
+    race_eth_4cat ~ "Race/Ethnicity",
+    REGION_factor ~ "Region",
+    ins_3cat      ~ "Insurance Type"
+  )
+) |>
+  bold_p() |>
+  add_global_p() |>
+  modify_caption("**SA-2. Sensitivity analysis: logistic regression predicting HAD ≥5 years with insurance adjustment.**")
+
+tbl_sa2
+
+sa2_tidy <- broom::tidy(sa2_glm, conf.int = TRUE, exponentiate = TRUE)
+write.csv(sa2_tidy, "tables/sa2_logistic_insurance.csv", row.names = FALSE)
+```
+
+## SA-3: PLWH-Only Linear Regression (parallel to Table 4)
+
+```{r sa3-plwh}
+plwh_data <- modeling_data |>
+  filter(hiv_status == "PLWH", !is.na(UD_VL), !is.na(CD4N))
+
+sa3_lm <- lm(
+  heart_age_deviation ~ viral_suppression + cd4_100 + age_decade + SEX +
+    race_eth_4cat + ins_3cat,
+  data = plwh_data
+)
+
+tbl_sa3 <- tbl_regression(
+  sa3_lm,
+  estimate_fun = ~ style_sigfig(.x, digits = 2),
+  label = list(
+    viral_suppression ~ "Viral Load",
+    cd4_100           ~ "CD4 Count (per 100 cells/mm³)",
+    age_decade        ~ "Age (per 10 years)",
+    SEX               ~ "Sex",
+    race_eth_4cat     ~ "Race/Ethnicity",
+    ins_3cat          ~ "Insurance Type"
+  )
+) |>
+  bold_p() |>
+  add_global_p() |>
+  modify_caption("**SA-3. Sensitivity analysis: PLWH-only linear regression with insurance adjustment.**")
+
+tbl_sa3
+
+sa3_tidy <- broom::tidy(sa3_lm, conf.int = TRUE)
+write.csv(sa3_tidy, "tables/sa3_plwh_insurance.csv", row.names = FALSE)
+```
+
+------------------------------------------------------------------------
+
+# Key Comparison: NHB Coefficient With vs. Without Insurance Adjustment
+
+```{r comparison-table}
+# Main model values from manuscript (Table 2)
+main_nhb_beta <- 2.0
+main_nhb_lo   <- 1.2
+main_nhb_hi   <- 2.8
+
+# Extract sensitivity model NHB estimate
+sa1_nhb <- sa1_tidy |>
+  filter(term == "race_eth_4catNon-Hispanic Black") |>
+  select(estimate, conf.low, conf.high, p.value)
+
+comparison <- data.frame(
+  Model    = c("Main model (Table 2, no insurance)", "SA-1 (insurance adjusted)"),
+  Beta_NHB = c(main_nhb_beta, round(sa1_nhb$estimate, 2)),
+  CI_low   = c(main_nhb_lo,   round(sa1_nhb$conf.low, 2)),
+  CI_high  = c(main_nhb_hi,   round(sa1_nhb$conf.high, 2)),
+  P_value  = c("<0.001",      ifelse(sa1_nhb$p.value < 0.001, "<0.001",
+                                     round(sa1_nhb$p.value, 3)))
+)
+
+comparison$Delta_from_main <- c(NA,
+  round(sa1_nhb$estimate - main_nhb_beta, 2))
+
+kable(comparison,
+      col.names = c("Model", "β NHB", "95% CI low", "95% CI high", "p-value", "Δβ vs main"),
+      caption = "NHB race/ethnicity coefficient: main model vs. insurance-adjusted sensitivity model") |>
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+------------------------------------------------------------------------
+
+# Interpretation Notes
+
+- A **small attenuation** of the NHB β after insurance adjustment (e.g., 2.0 → \~1.7–1.8) would be consistent with insurance being a **partial mediator** of structural racism's effect on cardiovascular aging — not a confounder — supporting the manuscript's over-adjustment argument.
+- If the NHB β barely changes, it suggests that insurance differences do not explain the observed racial disparity in HAD, and that other structural pathways (residential segregation, chronic stress, environmental exposures) are the dominant mechanisms.
+- The insurance coefficients themselves (Public vs. Uninsured; Private vs. Uninsured) quantify whether access to coverage is independently associated with HAD after demographic adjustment.
+
+------------------------------------------------------------------------
+
+# Session Information
+
+```{r session-info}
+sessionInfo()
+```

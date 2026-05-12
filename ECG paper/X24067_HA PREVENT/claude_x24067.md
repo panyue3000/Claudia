@@ -56,9 +56,11 @@
 
 | File | Role | Notes |
 |------|------|-------|
-| **Pan_et_al_Revised_AIDS.qmd** | MAIN MANUSCRIPT — source of truth | Quarto markdown; edit this file |
-| **Pan_et_al_Revised_AIDS.html** | Rendered HTML output | Self-contained (1.3 MB); for sharing/review |
-| **Pan_et_al_Revised_AIDS.docx** | Rendered Word output | For journal submission/editing |
+| **AIDS/Pan_et_al_AIDS.qmd** | AIDS SUBMISSION MANUSCRIPT — source of truth for final submission text | Trimmed Quarto manuscript for AIDS Original Paper limits |
+| **AIDS/Pan_et_al_AIDS.docx** / **AIDS/01_Manuscript.docx** | Rendered Word submission manuscript | Generated from `AIDS/Pan_et_al_AIDS.qmd` |
+| Pan_et_al_Revised_AIDS.qmd | Pre-AIDS restructuring manuscript | Older root-level draft; do not edit for final AIDS submission |
+| Pan_et_al_Revised_AIDS.html | Rendered output from older root-level draft | Reference snapshot only |
+| Pan_et_al_Revised_AIDS.docx | Rendered Word output from older root-level draft | Reference snapshot only |
 | **references_aids.bib** | Bibliography | 47 BibTeX entries; AIDS journal format |
 | **aids.csl** | Citation style | Vancouver/NLM numeric (AIDS journal) |
 | **render_manuscript.py** | Python rendering helper | Automates quarto render calls |
@@ -69,7 +71,7 @@
 | E. Pan_Aims_Scholar_2024.docx | Grant specific aims | Scholar 2024 award |
 | F. Pan_Strategy_Scholar_2024.docx | Grant research strategy | Scholar 2024 award |
 | **analysis/** (subfolder) | All analysis source + outputs | See below |
-| analysis/X24067_Pan_Heart Age v2.qmd | **Canonical analysis script** — ALL tables + figures | Confirmed 2026-05-11: all 41 chunks render cleanly; spot-checks pass. Data from `data/prevent_risk.sas7bdat`. See R dependency notes below. |
+| analysis/X24067_Pan_Heart Age v2.qmd | **Canonical analysis script** — ALL tables + figures | Current source for Tables 1–4, Fig 1A/B combined, Supplemental Tables S1–S6, and Supplemental Figs S1–S2 plus CD4 diagnostics. Data from `data/prevent_risk.sas7bdat`. See R dependency notes below. |
 | analysis/X24067_Pan_Heart Age.qmd | Earlier exploratory analysis | Reads `prevent_risk_baseline.csv` |
 | analysis/X24067_Pan_Heart Age.pdf | Rendered exploratory PDF | |
 | analysis/X24067_Pan_Heart Age*.html | Dated rendered analysis HTMLs (09/12/2025, 01/17/2026, 01/23/2026) | Snapshots; do not edit |
@@ -98,7 +100,7 @@
 
 ## 4. Manuscript Structure
 
-The main file `Pan_et_al_Revised_AIDS.qmd` has this section structure:
+The AIDS submission file `AIDS/Pan_et_al_AIDS.qmd` has this section structure:
 
 ```
 ## Abstract                          (structured: Background / Methods / Results / Conclusions)
@@ -127,8 +129,8 @@ The main file `Pan_et_al_Revised_AIDS.qmd` has this section structure:
 ## Acknowledgments       (MWCCS site PIs + grant numbers; added April 20, 2026)
 ## References            (auto-generated from references_aids.bib via aids.csl)
 ## Tables                (Tables 1–4 main; placeholders and captions only)
-## Figures               (Figures 1–2 main; placeholders and captions only)
-## Supplemental Material (Tables S1–S7; Figs S1–S2)
+## Figures               (Fig 1 main; combined Panels A+B; placeholder and caption only)
+## Supplemental Material (Tables S1–S6; Figs S1–S2)
 ```
 
 ### Main Text Tables (4 tables) + Figures (1 combined) = 5 total ≤ AIDS limit
@@ -178,16 +180,16 @@ The main file `Pan_et_al_Revised_AIDS.qmd` has this section structure:
 # Navigate to this directory first, then:
 
 # Render HTML
-quarto render Pan_et_al_Revised_AIDS.qmd --to html
+quarto render AIDS/Pan_et_al_AIDS.qmd --to html
 
 # Render Word
-quarto render Pan_et_al_Revised_AIDS.qmd --to docx
+quarto render AIDS/Pan_et_al_AIDS.qmd --to docx
 
 # Or use the Python helper (checks dependencies, handles errors)
 python render_manuscript.py
 ```
 
-**Important:** Close `Pan_et_al_Revised_AIDS.docx` in Word before rendering DOCX — Word locks the file and Pandoc will throw `permission denied`.
+**Important:** Close `AIDS/Pan_et_al_AIDS.docx` and `AIDS/01_Manuscript.docx` in Word before rendering DOCX — Word locks the file and Pandoc will throw `permission denied`.
 
 ---
 
@@ -208,7 +210,7 @@ python render_manuscript.py
 
 5. **HAD threshold.** Primary threshold is HAD ≥5 years. Secondary is HAD ≥10 years. Both are reported. The ≥5 threshold is a priori defined based on clinical convention (not data-driven).
 
-6. **Do not edit the older drafts.** `Manuscript_Heart_Age_HIV_MWCCS.qmd` and the earlier `.docx` files are archives — edit only `Pan_et_al_Revised_AIDS.qmd`.
+6. **Do not edit the older drafts.** `Manuscript_Heart_Age_HIV_MWCCS.qmd`, `Pan_et_al_Revised_AIDS.qmd`, and the earlier `.docx` files are archives for the AIDS submission workflow — edit `AIDS/Pan_et_al_AIDS.qmd` for manuscript text and `analysis/X24067_Pan_Heart Age v2.qmd` for tables/figures.
 
 ---
 
@@ -231,7 +233,7 @@ A comprehensive 10-task peer review and revision pass was completed, targeting C
 | + | Strengths section | New ### Strengths subsection added with 7 points (April 20, 2026) |
 | + | Font consistency fix | All 63 LaTeX math expressions replaced with Unicode characters |
 | + | Peer review pass (April 20, 2026) | Fixed 9 issues: wrong sample sizes in Strengths (1,715→1,766), causal inference language, HAD age-direction error (corrected to 50–59 peak), CD4 units standardized to mm³, neighborhood safety direction clarified, PTSD CI added, age OR noted non-significant in logistic, figure citations added (Fig 1/2/S1/S2), COI + Funding + Acknowledgments sections added |
-| + | Table/figure restructuring (April 20, 2026) | AIDS journal compliance: 4 main tables (1–4), 2 main figures (1–2); 7 supplemental tables (S1–S7), 2 supplemental figures (S1–S2); both QMD and X24067_Tables and Figures.docx updated and reordered |
+| + | Table/figure restructuring (May 11, 2026) | AIDS journal compliance: 4 main tables (1–4) + 1 combined Fig 1 (A+B); supplemental tables renumbered to S1–S6, with S4/S5 prevalence tables promoted into main Table 2 |
 | + | Pre-distribution review pass (April 20, 2026) | Full numerical consistency audit (all 18 key stats verified ✓); 6 edits applied and confirmed: (1) MICE missing-data filled in from `prevent_risk.sas7bdat` (N=2,729): CES-D 10.9% missing, PSS-10 9.7%, neighborhood safety 9.1%, loneliness 8.8%, PTSD (PCL-C) 93.6% missing (n=176 available; assessed in subset only); 87.2% complete on the 4 primary psychosocial vars; (2) R version confirmed **4.5.3**; (3) HAD ≥10-year robustness sentence added to Conclusions; (4) survivor bias / PREVENT lower-bound caveat added to Conclusions; (5) age OR language clarified; (6) `p\>0.9` escaping fixed |
 | + | PCL-C/PTSD missingness disclosure (April 20, 2026) | Added 3 targeted edits to address PCL-C availability (n=176; 6.4%): Results — caveat added after PTSD estimate; Limitation #4 — PCL-C subset assessment disclosed, imputed estimate flagged as preliminary, MAR assumption noted; Discussion (depression paragraph) — null PTSD finding contextualized: PTSD–depression co-occurrence, data sparsity rationale, mechanistic plausibility of PTSD–CVD pathways, call for future systematic PCL-C assessment |
 
@@ -341,3 +343,28 @@ Follow-up revisions were completed after review of `Other co-author.docx`, `Pan_
 - Geocoded or ZIP-linked analyses of area-level social risk, if restricted MWCCS linkage data become available
 - Whether HA-based feedback motivates CVD risk behavior change in PLWH (intervention study)
 - HAD ≥5 threshold validation against incident CVD events
+
+---
+
+## 11. May 11, 2026 AIDS Co-author Response Package
+
+Current final-review source files for the AIDS submission are:
+
+| File | Role |
+|---|---|
+| `AIDS/Pan_et_al_AIDS.qmd` | Current AIDS manuscript source |
+| `AIDS/Pan_et_al_AIDS.html` | Rendered manuscript check output |
+| `AIDS/Pan_et_al_AIDS.docx` | Rendered manuscript Word output |
+| `AIDS/CHANGES.md` | AIDS package change log |
+| `AIDS/coauthor_update_email_draft.md` | Co-author update email draft |
+| `AIDS/CLAUDE_FINAL_CHECK_PROMPT.md` | Prompt for final Claude manuscript/results check |
+| `Sensitivity analysis/` | Internal insurance-adjustment sensitivity analysis supporting the race/SES robustness statement |
+
+Latest co-author-response decisions:
+
+- Insurance adjustment remains an internal sensitivity check, not a new formal supplemental table. The sensitivity analysis showed no material attenuation of the NHB coefficient.
+- CD4 interpretation is intentionally cautious: current CD4 is framed as a possible proxy for survivorship, treatment era, higher CD4 at ART initiation, or other unmeasured HIV disease-history factors.
+- PTSD is de-emphasized because PCL-C was available for only 6.4% of participants.
+- Menopausal status is acknowledged as a limitation for interpreting sex differences.
+- MWCCS acknowledgments were updated using the current official MWCCS wording.
+- Manuscript word count after this revision is documented as abstract 247 and main text 3,409, within AIDS Original Paper limits.

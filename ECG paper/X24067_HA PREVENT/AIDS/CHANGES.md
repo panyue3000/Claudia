@@ -1,8 +1,8 @@
 # AIDS Submission Package — Changes Log
 
 **Date:** 2026-05-11
-**Source manuscript:** `../Pan_et_al_Revised_AIDS.qmd` (unchanged)
-**Trimmed submission manuscript:** `Pan_et_al_AIDS.qmd` (this folder)
+**Source manuscript:** `../Pan_et_al_Revised_AIDS.qmd` (archived pre-restructuring draft)
+**Trimmed submission manuscript:** `Pan_et_al_AIDS.qmd` (this folder; current AIDS source)
 **Target journal:** *AIDS* (Lippincott / Wolters Kluwer)
 **Article type:** Original Paper
 **Guidelines verified from:** `Editorial Manager - AIDS Author Guideline.pdf` (this folder)
@@ -13,8 +13,8 @@
 
 | Requirement | Official limit | This package | Status |
 |---|---|---|---|
-| Main text words | **≤3,500** (excluding abstract, references, figure legends) | **3,220** | ✓ |
-| Tables + figures combined | **up to 5** | **5** (3 tables + 2 figures) | ✓ |
+| Main text words | **≤3,500** (excluding abstract, references, figure legends) | **3,409** | ✓ |
+| Tables + figures combined | **up to 5** | **5** (4 tables + 1 figure) | ✓ |
 | Abstract | **≤250 words**, structured | **247** | ✓ |
 | Abstract structure | Objective(s) / Design / Methods / Results / Conclusions | matches | ✓ |
 | Title | ≤120 characters | 88 | ✓ |
@@ -40,25 +40,23 @@ Computed by stripping bold-label markers and horizontal-rule dividers from the q
 | Results | ~900 | 736 | −164 |
 | Discussion (incl. Limitations + Strengths) | ~3,000 | 1,259 | −1,741 |
 | Conclusions | ~250 | 109 | −141 |
-| **Main text total** | **~5,814** | **3,220** | **−2,594** |
+| **Main text total** | **~5,814** | **3,409** | **−2,405** |
 
-## 3. Tables and figures — merged to 5 combined
+## 3. Tables and figures — restructured to 5 combined
 
-The AIDS PDF specifies **up to 5 figures or tables** combined. The current package therefore merged Tables 2 and 3 from the original layout:
+The AIDS PDF specifies **up to 5 figures or tables** combined. The current package uses 4 main tables and 1 combined figure:
 
 | AIDS submission | Content | Origin |
 |---|---|---|
 | **Table 1** | Descriptive characteristics by HIV serostatus | unchanged |
-| **Table 2** (merged) | Multivariable linear regression for HAD (left panel) + logistic regression for elevated HAD (right panel) | **merge of original Tables 2 and 3** |
-| **Table 3** | HIV severity model (people with HIV only): viral load and CD4 count | renumbered from original Table 4 |
-| **Fig. 1** | Forest plot of logistic-regression predictors of HAD ≥5 years | unchanged |
-| **Fig. 2** | Forest plot of HIV-specific predictors of HAD | unchanged |
+| **Table 2** | Prevalence of HAD ≥5 years and heart age > chronological age, by HIV serostatus and clinical subgroups | promoted and merged from former Supplemental Tables S4–S5 |
+| **Table 3** | Multivariable regression predicting HAD; Panel A linear β and Panel B logistic OR | merge of previous main regression tables |
+| **Table 4** | HIV severity model (people with HIV only): viral load and CD4 count predicting HAD | retained as final main model table |
+| **Fig. 1** | Combined forest plots; Panel A logistic ORs and Panel B HIV-severity β coefficients | combines former Figs 1–2 into one vertical figure |
 
-**Combined: 3 tables + 2 figures = 5** ✓
+**Combined: 4 tables + 1 figure = 5** ✓
 
-In-text references in the manuscript already point to the merged numbering (Table 2 with "left panel" / "right panel" callouts; Table 3 for the HIV severity model). The supplementary file `02_Tables_and_Figures.docx` still contains the **un-merged** original Tables 2 and 3; **the corresponding author must merge them into a single side-by-side Table 2 before submission**. See open items §8.
-
-Supplemental tables (S1–S8) and supplemental figures (S1, S2) are unchanged and are not counted toward the main-text 5-combined limit.
+In-text references in the manuscript point to Table 2, Table 3 Panels A/B, Table 4, and Fig 1A/B. Supplemental Tables S4–S5 from the prior package were promoted into main Table 2; subsequent supplemental tables were renumbered so the supplement now runs S1–S6 plus Supplemental Figs S1–S2.
 
 ## 4. Section-by-section edits (trim + humanization)
 
@@ -84,7 +82,7 @@ Supplemental tables (S1–S8) and supplemental figures (S1, S2) are unchanged an
 - **Short title / running head (≤40 chars):** "Heart age in people with and without HIV" — exactly 40 chars ✓
 - Family names rendered in CAPITAL letters per AIDS rule: will appear via aids.csl in the rendered docx; current qmd uses standard capitalization for author block readability — corresponding author may need to convert surnames to ALL CAPS in the submission docx if AIDS strictly enforces this.
 - Combined heading: **"Conflicts of Interest and Source of Funding:"** ✓
-- Word count clearly stated on title page: Abstract 247; main text 3,220 ✓
+- Word count clearly stated on title page: Abstract 247; main text 3,409 ✓
 
 ## 6. Reference reconciliation
 
@@ -151,9 +149,9 @@ Changes applied to `Pan_et_al_AIDS.qmd` (this folder) and `../analysis/X24067_Pa
 
 | Change | Details |
 |--------|---------|
-| Suppl S4+S5 promoted → **main Table 2** | `tbl_merge` of `create_strat_prevalence("had5")` + `create_strat_prevalence("ha_gt_age")`; chi-square stars via `add_significance_stars(hide_p=TRUE)`; spans "HAD ≥5 years" / "HA > chron. age" |
+| Suppl S4+S5 promoted → **main Table 2** | Built directly with `gt::gt()` from manually computed prevalence cells; two spanners: "HAD ≥5 years" and "Heart age > chronological age"; cells show `n/N (%)` with chi-square significance stars |
 | Tables 2+3 merged → **main Table 3** | `tbl_merge` of linear + logistic regression tables; p-value columns replaced with significance stars; Panel A: β (95% CI), Panel B: OR (95% CI) |
-| Figs 1+2 combined → **Fig 1 (A+B)** | patchwork `fig1a_obj + fig1b_obj`, 16×7 in; saved as `../figures/Fig1_Combined.png`; standalone PNG files retired |
+| Figs 1+2 combined → **Fig 1 (A+B)** | Vertical patchwork `fig1a_tight / fig1b_tight`, 10×12 in at 300 dpi; saved as `../figures/Fig1_Combined.png`; standalone PNG files retired |
 | Suppl S6 → S4, S7 → S5, S8 → S6 | Renumbered to close gaps left by S4/S5 promotion |
 | **AIDS combined total: 4+1=5** | Within AIDS limit of 5 ✓ |
 
@@ -173,4 +171,26 @@ Changes applied to `Pan_et_al_AIDS.qmd` (this folder) and `../analysis/X24067_Pa
 
 ### Word counts after restructuring
 - Abstract: 247 / 250 ✓
-- Main text: 3,223 / 3,500 ✓
+- Main text: 3,409 / 3,500 ✓
+
+---
+
+## Co-author response revision round (2026-05-11)
+
+Additional comments from co-authors were reviewed against the current AIDS manuscript (`Pan_et_al_AIDS.qmd`) and the rendered analysis output (`../analysis/X24067_Pan_Heart Age v2.html`). The following manuscript-facing revisions were applied:
+
+| Area | Resolution | Files touched |
+|---|---|---|
+| CD4 interpretation | Removed interpretive language from the Results and softened the Discussion to frame current CD4 as a possible proxy for survivorship, treatment era, CD4 at ART initiation, or unmeasured HIV disease-history factors rather than a direct causal exposure. | `Pan_et_al_AIDS.qmd` |
+| PTSD / PCL-C | De-emphasized PTSD because PCL-C was available for only 6.4% of participants; retained only a cautious supplemental-model mention and limitations caveat. | `Pan_et_al_AIDS.qmd` |
+| Insurance sensitivity | Confirmed existing insurance-adjusted sensitivity checks in `../Sensitivity analysis/`; did not add another formal manuscript table. Manuscript now states this as an internal sensitivity check showing no material change in the NHB coefficient. | `Pan_et_al_AIDS.qmd`, `../Sensitivity analysis/` |
+| Sex / menopause | Added menopausal status as a limitation affecting interpretation of sex differences. | `Pan_et_al_AIDS.qmd` |
+| MWCCS acknowledgments | Updated acknowledgments to the current MWCCS recommended wording from the official acknowledgments page. | `Pan_et_al_AIDS.qmd` |
+| Co-author communication | Added a reusable email draft summarizing the revisions and the planned MWCCS internal committee review followed by AIDS submission after approval. | `coauthor_update_email_draft.md` |
+| Final external check | Added a reusable Claude prompt for final manuscript/results consistency review before MWCCS submission. | `CLAUDE_FINAL_CHECK_PROMPT.md` |
+
+### Verification after co-author response revision
+
+- `quarto render Pan_et_al_AIDS.qmd --to html` completed successfully.
+- `quarto render Pan_et_al_AIDS.qmd --to docx` completed successfully.
+- Rendered HTML was checked for stale unsupported CD4, PTSD, and insurance-supplement wording; no hits remained.

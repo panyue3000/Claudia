@@ -75,8 +75,7 @@ options(scipen = 999)
 
 This is for X24067_Pan_Heart Age. This analysis compares Heart Age outcomes between People Living Without HIV (PLWoH) and People Living With HIV (PLWH) (combining Seroprevalent and Seroconverter groups).
 
-Output order matches `X24067_Tables and Figures.docx`:
-Table 1 → Table 2 (merged S4+S5) → Table 3 (merged reg, Fig 1A+B) → Suppl Tables S1–S3 → Suppl S4 (MICE, was S6) → Suppl S5 (interaction, was S7) → Table 4 → Suppl S6 (sex-strat, was S8) → Suppl Fig S1 → Suppl Fig S2 → Suppl Figs S3–S5.
+Output order matches `X24067_Tables and Figures.docx`: Table 1 → Table 2 (merged S4+S5) → Table 3 (merged reg, Fig 1A+B) → Suppl Tables S1–S3 → Suppl S4 (MICE, was S6) → Suppl S5 (interaction, was S7) → Table 4 → Suppl S6 (sex-strat, was S8) → Suppl Fig S1 → Suppl Fig S2 → Suppl Figs S3–S5.
 
 ## 0. Load and Clean Data
 
@@ -294,8 +293,10 @@ table1
 
 ------------------------------------------------------------------------
 
+```{=html}
 <!-- Table 2 output appears here in document flow but is generated after strat_functions are defined.
      See the table2_prevalence_merged chunk below (placed after strat_functions). -->
+```
 
 ------------------------------------------------------------------------
 
@@ -545,6 +546,11 @@ create_strat_continuous <- function(data, outcome_var, caption) {
   header_plwh  <- paste0("**PLWH**\nN = ", format(n_plwh, big.mark = ","))
 
   tbl_stack(tbl_list, group_header = var_labels_map[row_vars]) %>%
+    remove_column_merge(columns = label) %>%
+    modify_table_body(
+      ~ .x %>%
+        mutate(label = stringr::str_remove(label, ", Mean \\(SD\\)$"))
+    ) %>%
     modify_caption(caption) %>%
     bold_labels() %>%
     modify_header(stat_1 = header_plwoh, stat_2 = header_plwh)
@@ -896,15 +902,16 @@ fig1_combined <- fig1a_tight / fig1b_tight +
     title = "Fig. 1. Forest plots of predictors of heart age deviation.",
     caption = paste0(
       "Panel A: predictors of elevated HAD (≥5 years) from multivariable logistic regression ",
-      "(odds ratios and 95% CIs; reference categories: HIV-negative, male, Non-Hispanic White, West; ",
-      "age per 10-year increment).\n",
+      "(odds ratios and 95% CIs).\n",
+      "Reference categories: HIV-negative, male, Non-Hispanic White, West; age per 10-year increment.\n",
       "Panel B: HIV-specific predictors of HAD among people with HIV from multivariable linear regression ",
-      "(β coefficients and 95% CIs; reference categories: undetectable viral load, male, ",
-      "Non-Hispanic White; CD4 count per 100 cells/μL; age per 10 years)."
+      "(β coefficients and 95% CIs).\n",
+      "Reference categories: undetectable viral load, male, Non-Hispanic White; ",
+      "CD4 count per 100 cells/μL; age per 10 years."
     ),
     theme = theme(
       plot.title   = element_text(size = 11, face = "bold", hjust = 0, margin = margin(b = 8)),
-      plot.caption = element_text(size = 8, hjust = 0, margin = margin(t = 10))
+      plot.caption = element_text(size = 7.5, hjust = 0, lineheight = 0.95, margin = margin(t = 10))
     )
   )
 
@@ -1135,7 +1142,7 @@ message("Supplemental figures saved to: ", figures_dir)
 #  CD4 Diagnostics — kept as supplemental (per author request)
 # ==============================================================================
 
-plwh_diag <- analysis_clean %>%
+plwh_diag <- modeling_data %>%
   filter(hiv_status == "PLWH") %>%
   filter(!is.na(CD4N), !is.na(heart_age_deviation)) %>%
   mutate(
